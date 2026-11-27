@@ -230,7 +230,8 @@ async function initPortal(){
  authClient.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){currentSession=session;renderAuth('recovery');hideApp();return}
   if(event==='SIGNED_OUT'){currentSession=null;currentProfile=null;hideApp();renderAuth('login');return}
-  if(session?.user){setTimeout(()=>showApp(session),0)}
+  const emailActionRoute=location.hash.startsWith('#invite')||location.hash.startsWith('#confirm-email');
+  if(session?.user&&!emailActionRoute){setTimeout(()=>showApp(session),0)}
  });
  const {data,error}=await authClient.auth.getSession();
  if(error)throw error;
