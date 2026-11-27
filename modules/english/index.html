@@ -88,12 +88,12 @@ async function signupMode(){try{S.signupMode=await rpc('rt_get_signup_mode')||'o
 function renderAuth(mode='login'){
  document.querySelectorAll('[data-auth-mode]').forEach(b=>b.classList.toggle('selected',b.dataset.authMode===mode));
  $('authTitle').textContent=({login:'登录仁爱通',signup:'创建仁爱通账号',magic:'邮箱验证码登录',emailotp:'邮箱验证码登录',reset:'重置密码',recovery:'设置新密码',verify_signup:'邮箱注册验证',verify_email:'邮箱登录验证'})[mode]||'登录仁爱通';
- $('authSubtitle').textContent=mode==='signup'?'注册后默认开放英语学习与竞赛网的全部学生功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'填写邮箱，系统将发送密码重置链接。':mode==='recovery'?'请设置新的登录密码。':mode.startsWith('verify_')?'请输入邮件中收到的 6 位验证码。':mode==='magic'||mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':'使用邮箱账号同步学习进度、录音和成绩。';
+ $('authSubtitle').textContent=mode==='signup'?'注册后默认开放英语学习与竞赛网的全部学生功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'填写邮箱，系统将发送密码重置链接。':mode==='recovery'?'请设置新的登录密码。':mode.startsWith('verify_')?'请输入邮件中收到的验证码。':mode==='magic'||mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':'使用邮箱账号同步学习进度、录音和成绩。';
  let h='';
  if(mode==='recovery'){
   h='<label class="field"><span>新密码（至少8位）</span><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></label><label class="field"><span>确认新密码</span><input id="newPassword2" type="password" minlength="8" autocomplete="new-password" required></label><button id="authSubmit">保存新密码</button>';
  }else if(mode==='verify_signup'||mode==='verify_email'){
-  h='<label class="field"><span>验证邮箱</span><input id="authEmail" type="email" value="'+String(pendingAuthEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></label><label class="field"><span>邮箱验证码</span><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的 6 位数字" required></label><button id="authSubmit">验证并继续</button><button class="outline" id="resendOtp" type="button">重新发送验证码</button>';
+  h='<label class="field"><span>验证邮箱</span><input id="authEmail" type="email" value="'+String(pendingAuthEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></label><label class="field"><span>邮箱验证码</span><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的验证码" required></label><button id="authSubmit">验证并继续</button><button class="outline" id="resendOtp" type="button">重新发送验证码</button>';
  }else{
   h='<label class="field"><span>邮箱 *</span><input id="authEmail" type="email" autocomplete="email" required placeholder="name@example.com"></label>';
   if(mode==='signup')h+='<label class="field"><span>昵称</span><input id="authDisplay" maxlength="60" placeholder="如何称呼你"></label>';
