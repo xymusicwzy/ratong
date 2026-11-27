@@ -121,7 +121,7 @@ async function submitAuth(ev){
   if(!authClient)throw new Error('认证服务暂不可用，请刷新页面后重试。');
   if(authMode==='verify_signup'||authMode==='verify_login'){
    const code=$('authOtp').value.trim();if(!/^\d{6}$/.test(code))throw new Error('请输入 6 位数字验证码。');
-   const {data,error}=await authClient.auth.verifyOtp({email:pendingOtpEmail,token:code,type:authMode==='verify_signup'?'signup':'email'});if(error)throw error;
+   const {data,error}=await authClient.auth.verifyOtp({email:pendingOtpEmail,token:code,type:'email'});if(error)throw error;
    currentSession=data.session;await showApp(data.session);return;
   }
   if(authMode==='recovery'){
