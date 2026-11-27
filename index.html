@@ -189,7 +189,7 @@ async function initPortal(){
  const {data,error}=await authClient.auth.getSession();
  if(error)throw error;
  if(location.hash.includes('type=recovery')){hideApp();renderAuth('recovery');return}
- if(data.session)await showApp(data.session);else{hideApp();renderAuth('login')}
+ if(data.session){await showApp(data.session);if(location.hash==='#templates')showPage('templates')}else{hideApp();renderAuth('login')}
 }
 initPortal().catch(e=>{hideApp();authNotice(e?.message||'认证初始化失败，请刷新页面。','error')});
 </script>
