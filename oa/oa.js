@@ -70,7 +70,7 @@ async function init(){
  }catch(e){$('gateMessage').textContent='初始化失败：'+fail(e);console.error(e)}
 }
 function go(page){
- if(S.mfaRequired&&!S.mfaReady&&page!=='security'&&page!=='overview'){toast('请先在安全与邮件中心绑定并验证 Google Authenticator。');page='security'}
+ if(S.mfaRequired&&!S.mfaReady&&page!=='security'){toast('请先在安全与邮件中心绑定并验证 Google Authenticator。');page='security'}
  const names={overview:'综合管理总览',accounts:'账号与权限',restore:'历史数据恢复',wordbooks:'英语词书管理',papers:'竞赛题库综合管理',assemble:'智能组卷中心',audit:'操作审计',security:'安全与邮件中心'};
  if(!names[page])return;
  S.page=page;
