@@ -102,7 +102,7 @@ function renderAuth(mode='login'){
  $('authIntro').textContent=mode==='signup'?'注册后默认开放全部学生学习功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':mode.startsWith('verify_')?'请输入邮件中收到的 6 位验证码。':'一个账号通行英语学习中心与竞赛网。学习记录按板块保存，身份与权限统一管理。';
  let html='';
  if(mode==='verify_signup'||mode==='verify_login'){
-  html='<div class="auth-field"><label>验证邮箱</label><input id="authEmail" type="email" value="'+String(pendingOtpEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></div><div class="auth-field"><label>6 位邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="输入邮件中的 6 位数字" required></div><button class="auth-submit" type="submit">验证并继续</button>';
+  html='<div class="auth-field"><label>验证邮箱</label><input id="authEmail" type="email" value="'+String(pendingOtpEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></div><div class="auth-field"><label>6 位邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="输入邮件中的 6 位数字" required></div><button class="auth-submit" type="submit">验证并继续</button><button id="authResendOtp" type="button" class="auth-submit" style="margin-top:8px;background:#eef0f8;color:#2f3b66">重新发送验证码</button>';
  }else if(mode==='recovery'){
   html='<div class="auth-field"><label>新密码（至少8位）</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></div><div class="auth-field"><label>确认新密码</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></div><button class="auth-submit" type="submit">保存新密码</button>';
  }else{
@@ -112,7 +112,20 @@ function renderAuth(mode='login'){
   if(mode==='signup')html+='<div class="auth-field"><label>确认密码</label><input id="authPassword2" type="password" minlength="8" autocomplete="new-password" required></div>';
   html+='<button class="auth-submit" type="submit">'+({login:'登录仁爱通',signup:'注册并发送验证码',reset:'发送密码重置邮件',emailotp:'发送邮箱验证码'})[mode]+'</button>';
  }
- $('authForm').innerHTML=html;$('authForm').onsubmit=submitAuth;authNotice('');
+ $('authForm').innerHTML=html;$('authForm').onsubmit=submitAuth;
+ $('authResendOtp')?.addEventListener('click',async()=>{
+  const b=$('authResendOtp');b.disabled=true;
+  try{
+   if(authMode==='verify_signup'){
+    const {error}=await authClient.auth.resend({type:'signup',email:pendingOtpEmail,options:{emailRedirectTo:ROOT_URL}});if(error)throw error;
+   }else{
+    const {error}=await authClient.auth.signInWithOtp({email:pendingOtpEmail,options:{shouldCreateUser:false,emailRedirectTo:ROOT_URL}});if(error)throw error;
+   }
+   authNotice('验证码已重新提交发送，请查收收件箱和垃圾邮件。','success');
+  }catch(e){authNotice(e?.message||'验证码重发失败，请稍后重试。','error')}
+  finally{b.disabled=false}
+ });
+ authNotice('');
 }
 async function submitAuth(ev){
  ev.preventDefault();
@@ -142,6 +155,11 @@ async function submitAuth(ev){
   if(authMode==='signup'){
    const p=$('authPassword').value;if(p.length<8||p!==$('authPassword2').value)throw new Error('密码至少8位，且两次输入必须一致。');
    const {data,error}=await authClient.auth.signUp({email,password:p,options:{data:{display_name:$('authName').value.trim()||email.split('@')[0]},emailRedirectTo:ROOT_URL}});if(error)throw error;
+   if(Array.isArray(data.user?.identities)&&data.user.identities.length===0){
+    renderAuth('login');
+    authNotice('该邮箱已对应仁爱通账号，不需要重复注册。请直接登录，或选择“邮箱验证码”登录；忘记密码可使用“找回密码”。','warning');
+    return;
+   }
    if(data.session){currentSession=data.session;await showApp(data.session)}else{pendingOtpEmail=email;renderAuth('verify_signup');authNotice('注册验证码已发送。请查收邮件并输入 6 位数字完成验证。','success')}
    return;
   }
@@ -149,7 +167,7 @@ async function submitAuth(ev){
    const {error}=await authClient.auth.resetPasswordForEmail(email,{redirectTo:ROOT_URL});if(error)throw error;
    authNotice('如果该邮箱已注册，系统已提交密码重置邮件。请检查收件箱和垃圾邮件。','success');
   }
- }catch(e){authNotice(e?.message||'操作失败，请稍后重试。','error')}
+ }catch(e){const m=e?.message||'操作失败，请稍后重试。';authNotice(/already registered|already exists|user exists/i.test(m)?'该邮箱已存在仁爱通账号，请直接登录、使用邮箱验证码登录或找回密码。':m,'error')}
  finally{if(btn){btn.disabled=false;btn.textContent=({login:'登录仁爱通',signup:'注册并发送验证码',reset:'发送密码重置邮件',recovery:'保存新密码',emailotp:'发送邮箱验证码',verify_signup:'验证并继续',verify_login:'验证并继续'})[authMode]||'提交'}}
 }
 function hideApp(){
