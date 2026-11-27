@@ -9,12 +9,13 @@ style.textContent=`
 #rtUnifiedBar .rt-brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.6px}
 #rtUnifiedBar .rt-mark{width:36px;height:36px;border-radius:11px;background:#d5b46b;color:#142d42;display:grid;place-items:center;font-size:18px}
 #rtUnifiedBar nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-#rtUnifiedBar a,#rtUnifiedBar button{border:0;background:transparent;color:#d6e2ea;text-decoration:none;border-radius:9px;padding:10px 13px;font:600 13px inherit;cursor:pointer}
+#rtUnifiedBar a,#rtUnifiedBar button{border:0;background:transparent;color:#d6e2ea;text-decoration:none;border-radius:9px;padding:10px 13px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
 #rtUnifiedBar a:hover,#rtUnifiedBar a.active{background:#ffffff1c;color:#fff}
 #rtUnifiedBar .rt-user{font-size:12px;color:#d4e0e8;white-space:nowrap}
 .layout,.app{grid-template-columns:248px minmax(0,1fr)!important}
 .layout>.sidebar,.app>.sidebar{display:flex!important}
 .layout>.main,.app>.main{min-width:0!important;padding-top:0!important}
+.app>.sidebar{top:68px!important;height:calc(100vh - 68px)!important}
 .layout .topbar,.app .topbar{display:none!important}
 @media(max-width:760px){#rtUnifiedBar{height:auto;min-height:64px;align-items:flex-start;gap:8px;flex-direction:column;padding:10px 14px}#rtUnifiedBar nav{width:100%;overflow-x:auto;flex-wrap:nowrap}#rtUnifiedBar a{white-space:nowrap;padding:8px 10px}#rtUnifiedBar .rt-user{display:none}}
 `;
