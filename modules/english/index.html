@@ -60,9 +60,9 @@
 </div></main></div><div id="globalToast" class="toast" role="status" aria-live="polite"></div>
 <script>
 (()=>{'use strict';
-const CFG={url:'https://zqrhfcsrexoamizkzzhq.supabase.co',key:'sb_publishable_6GBixfLPExUSQ0DSS5HdzQ_aXOHrSos',defaultSite:'https://xymusicwzy.github.io/ratong/'};
+const CFG={url:'https://mfmmwfdccspibvekoodb.supabase.co',key:'sb_publishable_83WSC0kHUHRLhTUDgxJEoQ_L9_ur8cS',defaultSite:'https://xymusicwzy.github.io/ratong/'};
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),uid=()=>crypto.randomUUID(),iso=()=>new Date().toISOString(),txt=v=>String(v??'').trim();
-const db=window.supabase?.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const db=window.supabase?.createClient(CFG.url,CFG.key,{auth:{storageKey:'ratong-unified-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
 const S={session:null,user:null,profile:null,roles:[],signupMode:'open',page:'home',books:[],words:[],idx:0,mode:'flash',reveal:false,target:10,done:0,known:0,review:0,importRows:[],importErrors:[],testRecorder:null,testStream:null,testChunks:[],testBlob:null,testUrl:null,exam:null,practice:null,practiceTimer:null,users:[],userPage:1,graderAttempt:null};
 function toast(msg,type=''){const e=$('globalToast');e.textContent=msg;e.className='toast show '+type;clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),4500)}
 function message(id,msg,type=''){const e=$(id);if(e){e.textContent=msg||'';e.className='inline-message '+type}}
@@ -78,7 +78,7 @@ function hasRole(...r){return r.some(x=>S.roles.includes(x))}
 const names={home:'学习总览',auth:'账号与认证',vocab:'单词打卡',speaking:'口语听说',practice:'在线练题',records:'学习档案',teacher:'教师工作台',admin:'管理员后台'};
 function go(p){S.page=names[p]?p:'home';document.querySelectorAll('.page').forEach(e=>e.classList.toggle('active',e.id==='page-'+S.page));document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===S.page));$('pageTitle').textContent=names[S.page];$('sidebar').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'});const f={home:loadDashboard,auth:()=>renderAuth('login'),vocab:loadBooks,speaking:async()=>{await loadOralExams();await loadMyExams()},practice:async()=>{await loadPapers();await loadPracticeHistory()},records:loadRecords,teacher:loadTeacher,admin:loadAdmin};Promise.resolve(f[S.page]?.()).catch(e=>toast(err(e),'error'))}
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));$('mobileMenu').onclick=()=>$('sidebar').classList.toggle('open');$('authButton').onclick=async()=>{if(S.session){if(confirm('确定退出当前账号？')){const{error}=await db.auth.signOut();if(error)toast(err(error),'error');else toast('已退出登录。')}}else go('auth')};
-function redirectUrl(){let u=location.origin+location.pathname;if(location.protocol==='file:')u=CFG.defaultSite;return u}
+function redirectUrl(){return CFG.defaultSite}
 function updateHeader(){$('userLabel').textContent=S.session?(S.profile?.display_name||S.user?.email||'已登录'):'访客模式';$('userAvatar').textContent=($('userLabel').textContent||'学').slice(0,1).toUpperCase();$('authButton').textContent=S.session?'退出登录':'登录 / 注册'}
 async function authRefresh(){if(!S.session){S.user=null;S.profile=null;S.roles=[];updateHeader();return}S.user=S.session.user;const[p,r]=await Promise.all([db.from('rt_profiles').select('id,display_name,student_no,class_name,timezone').eq('id',S.user.id).maybeSingle(),db.from('rt_user_roles').select('role').eq('user_id',S.user.id)]);if(p.error)throw p.error;if(r.error)throw r.error;S.profile=p.data||{display_name:S.user.email};S.roles=(r.data||[]).map(x=>x.role);updateHeader()}
 async function signupMode(){try{S.signupMode=await rpc('rt_get_signup_mode')||'open'}catch(e){console.warn(e);S.signupMode='open'}$('registrationModeText').textContent=S.signupMode==='roster_only'?'当前注册策略：仅接受学生名单内邮箱（教师邀请除外）。':'当前注册策略：允许公开注册。'}
