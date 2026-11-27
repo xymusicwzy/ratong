@@ -93,7 +93,7 @@ function renderAuth(mode='login'){
  if(mode==='recovery'){
   h='<label class="field"><span>新密码（至少8位）</span><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></label><label class="field"><span>确认新密码</span><input id="newPassword2" type="password" minlength="8" autocomplete="new-password" required></label><button id="authSubmit">保存新密码</button>';
  }else if(mode==='verify_signup'||mode==='verify_email'){
-  h='<label class="field"><span>验证邮箱</span><input id="authEmail" type="email" value="'+String(pendingAuthEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></label><label class="field"><span>6 位邮箱验证码</span><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="输入邮件中的 6 位数字" required></label><button id="authSubmit">验证并继续</button><button class="outline" id="resendOtp" type="button">重新发送验证码</button>';
+  h='<label class="field"><span>验证邮箱</span><input id="authEmail" type="email" value="'+String(pendingAuthEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></label><label class="field"><span>邮箱验证码</span><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的 6 位数字" required></label><button id="authSubmit">验证并继续</button><button class="outline" id="resendOtp" type="button">重新发送验证码</button>';
  }else{
   h='<label class="field"><span>邮箱 *</span><input id="authEmail" type="email" autocomplete="email" required placeholder="name@example.com"></label>';
   if(mode==='signup')h+='<label class="field"><span>昵称</span><input id="authDisplay" maxlength="60" placeholder="如何称呼你"></label>';
@@ -133,7 +133,7 @@ async function submitAuth(mode){
   }
   if(mode==='verify_signup'||mode==='verify_email'){
    const token=txt($('authOtp').value);
-   if(!/^\\d{6}$/.test(token))throw new Error('请输入 6 位数字验证码。');
+   if(!/^\\d{6,8}$/.test(token))throw new Error('请输入 6–8 位数字验证码。');
    const{data,error}=await db.auth.verifyOtp({email:pendingAuthEmail,token,type:'email'});if(error)throw error;
    S.session=data.session;await authRefresh();toast('邮箱验证成功，已登录仁爱通。','success');go('home');return;
   }
@@ -149,7 +149,7 @@ async function submitAuth(mode){
    const{data,error}=await db.auth.signUp({email,password:p,options:{data:{display_name:txt($('authDisplay')?.value)},emailRedirectTo:redirectUrl()}});if(error)throw error;
    if(Array.isArray(data.user?.identities)&&data.user.identities.length===0){renderAuth('login');toast('该邮箱已对应仁爱通账号，请直接登录、使用邮箱验证码登录或找回密码。','error');return}
    if(data.session){S.session=data.session;await authRefresh();toast('注册成功。','success');go('home')}
-   else{pendingAuthEmail=email;renderAuth('verify_signup');toast('注册验证码已发送，请查收邮箱并输入 6 位代码。','success')}
+   else{pendingAuthEmail=email;renderAuth('verify_signup');toast('注册验证码已发送，请查收邮箱并输入 验证码。','success')}
    return;
   }
   if(mode==='magic'||mode==='emailotp'){
