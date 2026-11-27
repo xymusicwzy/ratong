@@ -60,7 +60,7 @@ async function loadFactors(){
  }catch(e){status('无法读取 MFA 状态：'+(e.message||e),true)}
 }
 async function startEnroll(){
- secError('');
+ secError('');$('rtSecVerify').textContent='确认绑定 / 验证';
  try{
   const {data,error}=await client.auth.mfa.enroll({factorType:'totp',friendlyName:'Renaitong Google Authenticator'});if(error)throw error;
   pendingFactor=data.id;
@@ -80,7 +80,7 @@ async function verifyCode(){
   if(pendingRemoval){
    const {error:removeError}=await client.auth.mfa.unenroll({factorId:pendingFactor});if(removeError)throw removeError;
   }
-  pendingFactor=null;pendingChallenge=null;pendingRemoval=false;$('rtSecCode').value='';$('rtSecQr').style.display='none';$('rtSecSecret').hidden=true;$('rtSecCode').hidden=true;$('rtSecVerify').hidden=true;
+  pendingFactor=null;pendingChallenge=null;pendingRemoval=false;$('rtSecCode').value='';$('rtSecQr').style.display='none';$('rtSecSecret').hidden=true;$('rtSecCode').hidden=true;$('rtSecVerify').hidden=true;$('rtSecVerify').textContent='确认绑定 / 验证';
   await client.auth.refreshSession();status('验证器操作已完成。');await loadFactors();
   if(forced&&location.pathname.includes('/oa/')){location.reload();return}
   forced=false;$('rtSecClose').hidden=false;
