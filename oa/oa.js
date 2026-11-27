@@ -5,7 +5,7 @@ const KEY='sb_publishable_83WSC0kHUHRLhTUDgxJEoQ_L9_ur8cS';
 const ROOT='https://xymusicwzy.github.io/ratong/';
 const sb=window.supabase.createClient(URL,KEY,{auth:{storageKey:'ratong-unified-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
 const $=id=>document.getElementById(id);
-const S={user:null,profile:null,page:'overview',users:[],userPage:1,rosterRows:[],wordRows:[],questions:[],questionRows:[],papers:[],composePool:[],basket:[],assemblyId:null,assemblies:[],currentMfa:null};
+const S={user:null,profile:null,page:'overview',users:[],userPage:1,rosterRows:[],wordRows:[],questions:[],questionRows:[],papers:[],composePool:[],basket:[],assemblyId:null,assemblies:[],currentMfa:null,mfaReady:false,mfaRequired:false};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const msg=(id,t,type='')=>{const e=$(id);if(e){e.textContent=t||'';e.className='inline-message '+type}};
 const toast=t=>{const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(S.toastTimer);S.toastTimer=setTimeout(()=>e.classList.remove('show'),3800)};
@@ -14,6 +14,27 @@ const download=(name,blob)=>{const u=URL.createObjectURL(blob),a=document.create
 const csvBlob=rows=>new Blob(['\ufeff'+rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
 async function invokeAdmin(body){const {data,error}=await sb.functions.invoke('rt-admin-auth',{body:{...body,redirectTo:ROOT}});if(error)throw error;if(data?.error)throw new Error(data.error);return data}
 async function countRows(table){const {count,error}=await sb.from(table).select('id',{count:'exact',head:true});if(error)throw error;return count||0}
+async function loadOaData(){
+ await Promise.all([loadOverview(),loadPapers(),loadRoster(),loadWordbooks(),loadAudit(),loadAuthSettings(),loadMfa()]);
+}
+async function requireAdminTotp(factor){
+ const {data:challenge,error}=await sb.auth.mfa.challenge({factorId:factor.id});if(error)throw error;
+ $('gate').classList.remove('hidden');
+ const card=document.querySelector('#gate .gate-card');
+ card.innerHTML='<div class="brand-mark" style="margin:0 auto">仁</div><h1>管理员二次验证</h1><p>此账号已启用 Google Authenticator。请输入验证器当前显示的 6 位动态验证码，完成验证后进入 OA。</p><input id="gateTotpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 位动态验证码" style="width:100%;box-sizing:border-box;padding:13px;border:1px solid #dfe2ef;border-radius:10px;margin:12px 0"><div id="gateTotpError" style="font-size:12px;color:#b44359;min-height:22px"></div><button id="gateTotpVerify" style="width:100%">验证并进入 OA</button><a href="'+ROOT+'" style="display:inline-block;margin-top:15px">返回仁爱通首页</a>';
+ await new Promise(resolve=>{
+  $('gateTotpVerify').onclick=async()=>{
+   const code=$('gateTotpCode').value.trim();
+   if(!/^\\d{6}$/.test(code)){$('gateTotpError').textContent='请输入 6 位数字验证码。';return}
+   $('gateTotpVerify').disabled=true;
+   try{
+    const {error:verifyError}=await sb.auth.mfa.verify({factorId:factor.id,challengeId:challenge.id,code});if(verifyError)throw verifyError;
+    await sb.auth.refreshSession();resolve(true);
+   }catch(e){$('gateTotpError').textContent=fail(e);$('gateTotpVerify').disabled=false}
+  };
+ });
+ $('gate').classList.add('hidden');
+}
 async function init(){
  try{
   const {data,error}=await sb.auth.getSession();if(error)throw error;
@@ -25,7 +46,6 @@ async function init(){
   S.profile=p;
   $('adminName').textContent=p.full_name||S.user.email;
   $('topAdmin').textContent=(p.full_name||S.user.email)+' · OA 管理员';
-  $('gate').classList.add('hidden');$('workspace').classList.remove('hidden');
   document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
   document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).classList.add('hidden'));
@@ -33,11 +53,24 @@ async function init(){
   $('logout').onclick=logout;
   $('topSecurity').onclick=()=>go('security');
   bindEvents();
-  await Promise.all([loadOverview(),loadPapers(),loadRoster(),loadWordbooks(),loadAudit(),loadAuthSettings(),loadMfa()]);
-  go('overview');
+  const {data:factors,error:factorError}=await sb.auth.mfa.listFactors();if(factorError)throw factorError;
+  const verified=(factors?.totp||[]).filter(x=>x.status==='verified');
+  if(verified.length){
+   const {data:aal,error:aalError}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError;
+   if(aal?.currentLevel!=='aal2'&&aal?.nextLevel==='aal2')await requireAdminTotp(verified[0]);
+   S.mfaReady=true;S.mfaRequired=false;
+   $('gate').classList.add('hidden');$('workspace').classList.remove('hidden');
+   await loadOaData();go('overview');
+  }else{
+   S.mfaReady=false;S.mfaRequired=true;
+   $('gate').classList.add('hidden');$('workspace').classList.remove('hidden');
+   await loadMfa();go('security');
+   msg('settingsMessage','管理员 OA 操作已锁定。请先绑定 Google Authenticator，完成 6 位动态码验证后开放全部管理功能。','warning');
+  }
  }catch(e){$('gateMessage').textContent='初始化失败：'+fail(e);console.error(e)}
 }
 function go(page){
+ if(S.mfaRequired&&!S.mfaReady&&page!=='security'&&page!=='overview'){toast('请先在安全与邮件中心绑定并验证 Google Authenticator。');page='security'}
  const names={overview:'综合管理总览',accounts:'账号与权限',restore:'历史数据恢复',wordbooks:'英语词书管理',papers:'竞赛题库综合管理',assemble:'智能组卷中心',audit:'操作审计',security:'安全与邮件中心'};
  if(!names[page])return;
  S.page=page;
@@ -500,7 +533,9 @@ async function verifyTotp(){
  if(!S.pendingFactor)return toast('请先点击绑定动态验证码。');
  try{
   const {error}=await sb.auth.mfa.verify({factorId:S.pendingFactor.id,challengeId:S.pendingFactor.challengeId,code});if(error)throw error;
-  S.pendingFactor=null;$('mfaEnrollment').classList.add('hidden');$('mfaCode').value='';toast('Google Authenticator 绑定成功');await sb.auth.refreshSession();await loadMfa();
+  S.pendingFactor=null;$('mfaEnrollment').classList.add('hidden');$('mfaCode').value='';await sb.auth.refreshSession();await loadMfa();
+  S.mfaReady=true;S.mfaRequired=false;toast('Google Authenticator 绑定成功，OA 管理权限已解锁。');
+  await loadOaData();go('overview');
  }catch(e){toast(fail(e))}
 }
 async function logout(){if(!confirm('确定退出 OA 并退出仁爱通账号？'))return;await sb.auth.signOut();location.replace(ROOT)}
