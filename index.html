@@ -102,7 +102,7 @@ function renderAuth(mode='login'){
  $('authIntro').textContent=mode==='signup'?'注册后默认开放全部学生学习功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':mode==='inviteotp'?'请填写管理员邀请时使用的邮箱，并输入邀请邮件中的 邮箱验证码。':mode==='confirmotp'?'请填写注册邮箱并输入注册确认邮件中的 邮箱验证码。':mode.startsWith('verify_')?'请输入邮件中收到的 邮箱验证码。':'一个账号通行英语学习中心与竞赛网。学习记录按板块保存，身份与权限统一管理。';
  let html='';
  if(mode==='confirmotp'||mode==='inviteotp'){
-  html='<div class="auth-field"><label>邮箱地址</label><input id="authEmail" type="email" autocomplete="email" placeholder="请输入接收邮件的邮箱" required></div><div class="auth-field"><label>邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的验证码" required></div><button class="auth-submit" type="submit">'+(mode==='inviteotp'?'验证邀请并设置密码':'验证邮箱并登录')+'</button>';
+  html='<div class="auth-field"><label>邮箱地址</label><input id="authEmail" type="email" autocomplete="email" placeholder="请输入接收邮件的邮箱" required></div><div class="auth-field"><label>邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的验证码" required></div><button class="auth-submit" type="submit">'+(mode==='inviteotp'?'验证邀请并设置密码':'验证邮箱并登录')+'</button>'+(mode==='confirmotp'?'<button id="authResendConfirm" type="button" class="auth-submit" style="margin-top:8px;background:#eef0f8;color:#2f3b66">重新发送注册验证码</button>':'');
  }else if(mode==='verify_signup'||mode==='verify_login'){
   html='<div class="auth-field"><label>验证邮箱</label><input id="authEmail" type="email" value="'+String(pendingOtpEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></div><div class="auth-field"><label>邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的验证码" required></div><button class="auth-submit" type="submit">验证并继续</button><button id="authResendOtp" type="button" class="auth-submit" style="margin-top:8px;background:#eef0f8;color:#2f3b66">重新发送验证码</button>';
  }else if(mode==='recovery'){
@@ -115,6 +115,16 @@ function renderAuth(mode='login'){
   html+='<button class="auth-submit" type="submit">'+({login:'登录仁爱通',signup:'注册并发送验证码',reset:'发送密码重置邮件',emailotp:'发送邮箱验证码'})[mode]+'</button>';
  }
  $('authForm').innerHTML=html;$('authForm').onsubmit=submitAuth;
+ $('authResendConfirm')?.addEventListener('click',async()=>{
+  const email=$('authEmail').value.trim().toLowerCase(),b=$('authResendConfirm');
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return authNotice('请输入有效邮箱地址。','error');
+  b.disabled=true;
+  try{
+   const {error}=await authClient.auth.resend({type:'signup',email,options:{emailRedirectTo:ROOT_URL}});if(error)throw error;
+   authNotice('注册确认验证码已重新发送，请检查收件箱和垃圾邮件。','success');
+  }catch(e){authNotice(e?.message||'重发失败，请稍后再试。','error')}
+  finally{b.disabled=false}
+ });
  $('authResendOtp')?.addEventListener('click',async()=>{
   const b=$('authResendOtp');b.disabled=true;
   try{
