@@ -160,7 +160,17 @@ function renderAccounts(){
 async function sendInvite(){
  const email=$('inviteEmail').value.trim().toLowerCase(),role=$('inviteRole').value;
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return msg('inviteMessage','请输入有效邮箱地址。','error');
- try{const r=await invokeAdmin({action:'invite_user',email,role});msg('inviteMessage','邀请已提交：'+email+'（'+role+'）。请检查 SMTP 和邀请邮件模板。','success');$('inviteEmail').value='';toast(r.message||'邀请邮件已提交');await loadAccounts()}catch(e){msg('inviteMessage',fail(e),'error')}
+ try{
+  const r=await invokeAdmin({action:'invite_user',email,role});
+  msg('inviteMessage',r.message||('邮件操作已提交：'+email+'（'+role+'）'),'success');
+  $('inviteEmail').value='';
+  toast(r.message||'邮件操作已提交');
+  await loadAccounts();
+ }catch(e){
+  const reason=fail(e);
+  msg('inviteMessage',reason,'error');
+  toast(reason);
+ }
 }
 async function accountAction(action,userId=null,email=null){
  try{const r=await invokeAdmin({action,userId,email});toast(r.message||'操作已提交');await loadAccounts()}catch(e){toast(fail(e))}
@@ -215,7 +225,12 @@ async function inviteRosterStudent(id){
  const {data,error}=await sb.from('rt_student_roster').select('email,display_name').eq('id',id).single();if(error)return toast(fail(error));
  if(!data.email)return toast('此历史学生没有邮箱，先补录并核实邮箱。');
  if(!confirm('向 '+data.email+' 发送仁爱通账号邀请？'))return;
- try{await invokeAdmin({action:'invite_user',email:data.email,role:'student'});await sb.from('rt_audit_logs').insert({actor_id:S.user.id,action:'restore_student_invite',entity_type:'rt_student_roster',entity_id:id,details:{email:data.email}});toast('账号邀请已提交');await loadAccounts()}catch(e){toast(fail(e))}
+ try{
+  const result=await invokeAdmin({action:'invite_user',email:data.email,role:'student'});
+  await sb.from('rt_audit_logs').insert({actor_id:S.user.id,action:'restore_student_invite',entity_type:'rt_student_roster',entity_id:id,details:{email:data.email,flow:result.flow||'unknown'}});
+  toast(result.message||'账号邮件操作已提交');
+  await loadAccounts();
+ }catch(e){toast(fail(e))}
 }
 async function restoreBank(){
  const file=$('bankRestoreFile').files?.[0];if(!file)return msg('bankRestoreReport','请先选择 JSON / Excel / CSV 文件。','error');
