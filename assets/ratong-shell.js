@@ -43,7 +43,7 @@ const overlay=document.createElement('div');overlay.id='rtSecurityOverlay';
 overlay.innerHTML='<section id="rtSecurityCard"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-size:10px;letter-spacing:1.6px;color:#7079d8;font-weight:800">ACCOUNT SECURITY</div><h2>仁爱通账号安全中心</h2></div><button id="rtSecClose" class="secondary" type="button">关闭</button></div><p>绑定 Google Authenticator 或兼容的 TOTP 验证器，为账号增加动态验证码保护。</p><div id="rtSecStatus" class="rt-sec-status">正在读取安全状态…</div><img id="rtSecQr" class="rt-sec-qr" alt="动态验证码绑定二维码"><code id="rtSecSecret" hidden></code><input id="rtSecCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="请输入 6 位动态验证码" hidden><div id="rtSecError" class="rt-sec-error"></div><div class="rt-sec-actions"><button id="rtSecEnroll" type="button">绑定验证器</button><button id="rtSecVerify" type="button" hidden>确认绑定 / 验证</button><button id="rtSecRemove" class="danger" type="button" hidden>解除绑定</button><button id="rtSecRefresh" class="secondary" type="button">刷新状态</button></div></section>';
 document.body.appendChild(overlay);
 const $=id=>document.getElementById(id);
-let activeFactor=null,pendingFactor=null,pendingChallenge=null,profile=null,session=null,forced=false;
+let activeFactor=null,pendingFactor=null,pendingChallenge=null,pendingRemoval=false,profile=null,session=null,forced=false;
 function status(text,error=false){$('rtSecStatus').textContent=text;$('rtSecStatus').style.background=error?'#fff0f2':'#f0f2ff';$('rtSecStatus').style.color=error?'#b44259':'#525db6'}
 function secError(t){$('rtSecError').textContent=t||''}
 function openSecurity(force=false){forced=force;$('rtSecClose').hidden=force;overlay.classList.add('open');loadFactors()}
@@ -73,14 +73,18 @@ async function startEnroll(){
  }catch(e){secError(e.message||String(e))}
 }
 async function verifyCode(){
- const code=$('rtSecCode').value.trim();if(!/^\d{6}$/.test(code))return secError('请输入 6 位数字验证码。');
+ const code=$('rtSecCode').value.trim();if(!/^\d{6}$/.test(code))return secError('请输入 6 位动态验证码。');
  if(!pendingFactor||!pendingChallenge)return secError('请先绑定验证器或等待验证器验证。');
  try{
   const {error}=await client.auth.mfa.verify({factorId:pendingFactor,challengeId:pendingChallenge,code});if(error)throw error;
-  pendingFactor=null;pendingChallenge=null;$('rtSecCode').value='';$('rtSecQr').style.display='none';$('rtSecSecret').hidden=true;$('rtSecCode').hidden=true;$('rtSecVerify').hidden=true;
-  await client.auth.refreshSession();status('验证器已成功绑定 / 验证。');await loadFactors();
+  if(pendingRemoval){
+   const {error:removeError}=await client.auth.mfa.unenroll({factorId:pendingFactor});if(removeError)throw removeError;
+  }
+  pendingFactor=null;pendingChallenge=null;pendingRemoval=false;$('rtSecCode').value='';$('rtSecQr').style.display='none';$('rtSecSecret').hidden=true;$('rtSecCode').hidden=true;$('rtSecVerify').hidden=true;
+  await client.auth.refreshSession();status('验证器操作已完成。');await loadFactors();
   if(forced&&location.pathname.includes('/oa/')){location.reload();return}
   forced=false;$('rtSecClose').hidden=false;
+  $('rtSecRemove').textContent='解除绑定';
  }catch(e){secError(e.message||String(e))}
 }
 async function verifyExistingFactor(){
@@ -96,12 +100,13 @@ async function verifyExistingFactor(){
 }
 async function removeFactor(){
  if(!activeFactor)return;
- const code=$('rtSecCode').value.trim();if(!/^\d{6}$/.test(code))return secError('为保护账号，解除绑定前请先完成动态码验证。');
  try{
-  const {data:ch,error:ce}=await client.auth.mfa.challenge({factorId:activeFactor.id});if(ce)throw ce;
-  const {error:ve}=await client.auth.mfa.verify({factorId:activeFactor.id,challengeId:ch.id,code});if(ve)throw ve;
-  const {error}=await client.auth.mfa.unenroll({factorId:activeFactor.id});if(error)throw error;
-  await client.auth.refreshSession();$('rtSecCode').value='';status('验证器已解除绑定。');await loadFactors();
+  const {data:ch,error}=await client.auth.mfa.challenge({factorId:activeFactor.id});if(error)throw error;
+  pendingFactor=activeFactor.id;pendingChallenge=ch.id;pendingRemoval=true;
+  $('rtSecCode').hidden=false;$('rtSecVerify').hidden=false;$('rtSecCode').value='';
+  $('rtSecVerify').textContent='确认解除绑定';
+  status('为保护账号，请输入验证器当前的 6 位动态码，确认解除。');
+  secError('');
  }catch(e){secError(e.message||String(e))}
 }
 $('rtSecEnroll').onclick=startEnroll;$('rtSecVerify').onclick=verifyCode;$('rtSecRemove').onclick=removeFactor;
