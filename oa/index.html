@@ -76,7 +76,7 @@
     <div class="panel">
      <h3>历史学生名册</h3>
      <p class="muted">支持 CSV / XLSX。导入后进入历史名册；核实邮箱后，可逐人发送邀请恢复登录。名册记录不等于已恢复账号。</p>
-     <div class="toolbar"><a class="outline-link" href="../templates/import/学生名单导入模板.csv" download>下载学生名单模板</a><input type="file" id="rosterFile" accept=".csv,.xlsx,.xls"><button id="previewRoster" class="outline-button">预览并校验</button><button id="importRoster" disabled>导入名册</button></div>
+     <div class="toolbar"><button id="downloadRosterTemplate" class="outline-button">下载学生名单 Excel 模板</button> <a class="outline-link" href="../templates/import/学生名单导入模板.csv" download>CSV 模板</a><input type="file" id="rosterFile" accept=".csv,.xlsx,.xls"><button id="previewRoster" class="outline-button">预览并校验</button><button id="importRoster" disabled>导入名册</button></div>
      <div id="rosterReport" class="inline-message"></div><div id="rosterPreview" class="table-scroll"></div>
      <div class="section-heading compact"><div><h3>当前历史学生档案</h3><p>可逐条邀请恢复登录，或调整名册状态。</p></div><button id="refreshRoster" class="outline-button">刷新名册</button></div>
      <div id="rosterTable" class="table-scroll"><div class="empty">加载中…</div></div>
@@ -84,7 +84,7 @@
     <div class="panel">
      <h3>历史竞赛题库备份恢复</h3>
      <p class="muted">支持仁爱通 JSON 题库备份和 Excel 题库模板。导入后全部先进入草稿状态，需核验后再发布。</p>
-     <div class="toolbar"><input type="file" id="bankRestoreFile" accept=".json,.xlsx,.xls,.csv"><button id="restoreBank" class="outline-button">校验并恢复题库</button><button id="exportFullBank" class="outline-button">导出当前题库 JSON</button></div>
+     <div class="toolbar"><input type="file" id="bankRestoreFile" accept=".json,.xlsx,.xls,.csv"><button id="downloadCompetitionTemplate" class="outline-button">下载竞赛题库 Excel 模板</button><button id="restoreBank" class="outline-button">校验并恢复题库</button><button id="exportFullBank" class="outline-button">导出当前题库 JSON</button></div>
      <div id="bankRestoreReport" class="inline-message"></div>
     </div>
     <div class="panel">
