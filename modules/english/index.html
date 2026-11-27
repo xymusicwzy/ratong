@@ -123,7 +123,7 @@ async function submitAuth(mode){
   if(mode==='verify_signup'||mode==='verify_email'){
    const token=txt($('authOtp').value);
    if(!/^\\d{6}$/.test(token))throw new Error('请输入 6 位数字验证码。');
-   const{data,error}=await db.auth.verifyOtp({email:pendingAuthEmail,token,type:mode==='verify_signup'?'signup':'email'});if(error)throw error;
+   const{data,error}=await db.auth.verifyOtp({email:pendingAuthEmail,token,type:'email'});if(error)throw error;
    S.session=data.session;await authRefresh();toast('邮箱验证成功，已登录仁爱通。','success');go('home');return;
   }
   const email=txt($('authEmail')?.value).toLowerCase();
