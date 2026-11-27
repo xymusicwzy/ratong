@@ -12,8 +12,8 @@ style.textContent=`
 #rtUnifiedBar a,#rtUnifiedBar button{border:0;background:transparent;color:#d6e2ea;text-decoration:none;border-radius:9px;padding:10px 13px;font:600 13px inherit;cursor:pointer}
 #rtUnifiedBar a:hover,#rtUnifiedBar a.active{background:#ffffff1c;color:#fff}
 #rtUnifiedBar .rt-user{font-size:12px;color:#d4e0e8;white-space:nowrap}
-.layout,.app{grid-template-columns:minmax(0,1fr)!important}
-.layout>.sidebar,.app>.sidebar{display:none!important}
+.layout,.app{grid-template-columns:248px minmax(0,1fr)!important}
+.layout>.sidebar,.app>.sidebar{display:flex!important}
 .layout>.main,.app>.main{min-width:0!important;padding-top:0!important}
 .layout .topbar,.app .topbar{display:none!important}
 @media(max-width:760px){#rtUnifiedBar{height:auto;min-height:64px;align-items:flex-start;gap:8px;flex-direction:column;padding:10px 14px}#rtUnifiedBar nav{width:100%;overflow-x:auto;flex-wrap:nowrap}#rtUnifiedBar a{white-space:nowrap;padding:8px 10px}#rtUnifiedBar .rt-user{display:none}}
