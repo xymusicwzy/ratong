@@ -477,7 +477,7 @@ function renderBasket(){
 }
 async function saveAssembly(){
  const title=$('assembleTitle').value.trim();if(!title||!S.basket.length)return msg('assembleMessage','请填写试卷名称并加入题目。','error');
- const data={created_by:S.user.id,title,description:$('assembleDescription').value.trim(),status:'draft',paper_data:{items:S.basket,total_score:S.basket.reduce((n,q)=>n+Number(q.score||0),0)}};
+ const data={created_by:S.user.id,title,description:$('assembleDescription').value.trim(),status:'draft',paper_data:{items:S.basket,total_score:S.basket.reduce((n,q)=>n+Number(q.score||0),0),settings:getAssemblySettings()}};
  try{
   const result=S.assemblyId?await sb.from('chem_assembled_papers').update({...data,updated_at:new Date().toISOString()}).eq('id',S.assemblyId).select('id').single():await sb.from('chem_assembled_papers').insert(data).select('id').single();
   if(result.error)throw result.error;S.assemblyId=result.data.id;msg('assembleMessage','组卷草稿已保存。','success');toast('组卷草稿已保存');await loadAssemblies();
@@ -492,30 +492,72 @@ async function loadAssemblies(){
 }
 async function openAssembly(id){
  const {data,error}=await sb.from('chem_assembled_papers').select('*').eq('id',id).single();if(error)return toast(fail(error));
- S.assemblyId=id;$('assembleTitle').value=data.title;$('assembleDescription').value=data.description||'';S.basket=data.paper_data?.items||[];renderBasket();go('assemble');
+ S.assemblyId=id;$('assembleTitle').value=data.title;$('assembleDescription').value=data.description||'';S.basket=data.paper_data?.items||[];applyAssemblySettings(data.paper_data?.settings||{});renderBasket();go('assemble');
 }
 async function deleteAssembly(id){
  if(!confirm('确认删除这份组卷草稿？'))return;
  try{const {error}=await sb.from('chem_assembled_papers').delete().eq('id',id);if(error)throw error;toast('组卷草稿已删除');if(S.assemblyId===id){S.assemblyId=null;S.basket=[];renderBasket()}await loadAssemblies()}catch(e){toast(fail(e))}
 }
+function getAssemblySettings(){
+ return {paper_size:$('assemblyPaperSize')?.value||'A4',orientation:$('assemblyOrientation')?.value||'portrait',columns:Number($('assemblyColumns')?.value)||1,include_answers:!!$('assemblyIncludeAnswers')?.checked,include_explanations:!!$('assemblyIncludeExplanations')?.checked,include_sources:!!$('assemblyIncludeSources')?.checked,answer_position:$('assemblyAnswerPosition')?.value||'after'};
+}
+function applyAssemblySettings(s){
+ if($('assemblyPaperSize'))$('assemblyPaperSize').value=s.paper_size||'A4';
+ if($('assemblyOrientation'))$('assemblyOrientation').value=s.orientation||'portrait';
+ if($('assemblyColumns'))$('assemblyColumns').value=String(s.columns||1);
+ if($('assemblyIncludeAnswers'))$('assemblyIncludeAnswers').checked=!!s.include_answers;
+ if($('assemblyIncludeExplanations'))$('assemblyIncludeExplanations').checked=!!s.include_explanations;
+ if($('assemblyIncludeSources'))$('assemblyIncludeSources').checked=s.include_sources!==false;
+ if($('assemblyAnswerPosition'))$('assemblyAnswerPosition').value=s.answer_position||'after';
+}
+function assemblyAnswerText(q){
+ if(q.answer_key===null||q.answer_key===undefined)return '未录入答案（待核验）';
+ return Array.isArray(q.answer_key)?q.answer_key.join('、'):String(q.answer_key);
+}
 function assemblyHtml(){
- const title=esc($('assembleTitle').value||'仁爱通组卷');
- const items=S.basket.map((q,i)=>'<section style="margin:18px 0;page-break-inside:avoid"><p><b>'+(i+1)+'. '+esc(q.stem)+'</b>（'+Number(q.score||0)+'分）</p>'+((q.options||[]).map(o=>'<p style="margin:4px 20px">'+esc(o.key||'')+'．'+esc(o.text||o)+'</p>').join(''))+'</section>').join('');
- return '<!doctype html><html><meta charset="utf-8"><title>'+title+'</title><body style="font-family:Microsoft YaHei,Arial;line-height:1.8;max-width:850px;margin:30px auto"><h1 style="text-align:center">'+title+'</h1><p>'+esc($('assembleDescription').value)+'</p>'+items+'</body></html>';
+ const settings=getAssemblySettings(),title=esc($('assembleTitle').value||'仁爱通组卷');
+ const answerList=[];
+ const items=S.basket.map((q,i)=>{
+  let part='<section class="question"><p><b>'+(i+1)+'. '+esc(q.stem)+'</b>（'+Number(q.score||0)+'分）</p>'+((q.options||[]).map(o=>'<p class="option">'+esc(o.key||'')+'．'+esc(o.text||o)+'</p>').join(''));
+  if(settings.include_sources)part+='<p class="source">来源：'+esc(q.paper_title||'题库资料')+' · #'+esc(q.qno)+'</p>';
+  const answer=settings.include_answers?'<p class="answer"><b>答案：</b>'+esc(assemblyAnswerText(q))+'</p>':'';
+  const explanation=settings.include_explanations?'<p class="explanation"><b>解析：</b>'+esc(q.explanation||'暂无解析')+'</p>':'';
+  if(settings.answer_position==='end'){answerList.push('<section class="answer-item"><b>'+(i+1)+'.</b> '+(answer||'')+(explanation||'')+'</section>')}
+  else part+=answer+explanation;
+  return part+'</section>';
+ }).join('');
+ const endAnswers=settings.answer_position==='end'&&(settings.include_answers||settings.include_explanations)?'<h2 class="answers-heading">参考答案与解析</h2>'+answerList.join(''):'';
+ const size=settings.paper_size||'A4',orientation=settings.orientation||'portrait',columns=settings.columns===2?2:1;
+ return '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>'+title+'</title><style>@page{size:'+size+' '+orientation+';margin:18mm}body{font-family:"Microsoft YaHei",Arial,sans-serif;line-height:1.8;color:#222;max-width:100%;margin:0 auto}h1{text-align:center;font-size:22pt;margin:0 0 8mm}.description{margin-bottom:8mm}.questions{column-count:'+columns+';column-gap:12mm}.question{break-inside:avoid;margin:0 0 7mm}.option{margin:2mm 5mm}.source{font-size:9pt;color:#777}.answer,.explanation{font-size:10pt;background:#f6f7fa;padding:2mm 3mm;border-radius:2mm}.answers-heading{page-break-before:always;text-align:center}.answer-item{break-inside:avoid;margin:4mm 0;padding:3mm;border-bottom:1px solid #ddd}@media print{body{max-width:none}}</style></head><body><h1>'+title+'</h1><p class="description">'+esc($('assembleDescription').value)+'</p><p>考试时间：__________　姓名：__________　学号：__________</p><div class="questions">'+items+'</div>'+endAnswers+'</body></html>';
 }
 async function exportAssemblyDocx(){
  if(!S.basket.length)return toast('试题篮为空。');
  if(!window.docx?.Document||!window.docx?.Packer)return toast('DOCX 组件未加载，请检查网络后重试。');
  try{
-  const children=[new docx.Paragraph({text:$('assembleTitle').value||'仁爱通组卷',heading:docx.HeadingLevel.TITLE}),new docx.Paragraph({text:$('assembleDescription').value||''})];
+  const s=getAssemblySettings(),sizes={A4:{width:11906,height:16838},A3:{width:16838,height:23811},B4:{width:14570,height:20636}};
+  let pageSize=sizes[s.paper_size]||sizes.A4;if(s.orientation==='landscape')pageSize={width:pageSize.height,height:pageSize.width};
+  const children=[new docx.Paragraph({text:$('assembleTitle').value||'仁爱通组卷',heading:docx.HeadingLevel.TITLE}),new docx.Paragraph({text:$('assembleDescription').value||''}),new docx.Paragraph({text:'考试时间：__________    姓名：__________    学号：__________'})];
+  const endAnswers=[];
   S.basket.forEach((q,i)=>{
-   children.push(new docx.Paragraph({children:[new docx.TextRun({text:(i+1)+'. '+q.stem,bold:true}),new docx.TextRun({text:'（'+Number(q.score||0)+'分）'})]}));
+   children.push(new docx.Paragraph({children:[new docx.TextRun({text:(i+1)+'. '+String(q.stem||''),bold:true}),new docx.TextRun({text:'（'+Number(q.score||0)+'分）'})]}));
    (q.options||[]).forEach(o=>children.push(new docx.Paragraph({text:String(o.key||'')+'．'+String(o.text||o),indent:{left:360}})));
+   if(s.include_sources)children.push(new docx.Paragraph({text:'来源：'+String(q.paper_title||'题库资料')+' · #'+String(q.qno),style:'Caption'}));
+   const answer=s.include_answers?new docx.Paragraph({children:[new docx.TextRun({text:'答案：',bold:true}),new docx.TextRun({text:assemblyAnswerText(q)})]}):null;
+   const explanation=s.include_explanations?new docx.Paragraph({children:[new docx.TextRun({text:'解析：',bold:true}),new docx.TextRun({text:String(q.explanation||'暂无解析')})]}):null;
+   if(s.answer_position==='end'){if(answer)endAnswers.push(new docx.Paragraph({text:(i+1)+'. '+assemblyAnswerText(q)}));if(explanation)endAnswers.push(new docx.Paragraph({text:'解析：'+String(q.explanation||'暂无解析'),indent:{left:360}}))}
+   else{if(answer)children.push(answer);if(explanation)children.push(explanation)}
    children.push(new docx.Paragraph({text:' '}));
   });
-  const doc=new docx.Document({sections:[{children}]});
+  if(s.answer_position==='end'&&endAnswers.length){children.push(new docx.Paragraph({text:'参考答案与解析',heading:docx.HeadingLevel.HEADING_1,pageBreakBefore:true}));children.push(...endAnswers)}
+  const doc=new docx.Document({sections:[{properties:{page:{size:pageSize,margin:{top:850,right:850,bottom:850,left:850}}},children}]});
   const blob=await docx.Packer.toBlob(doc);download('仁爱通组卷.docx',blob);
+  toast('已按所选纸张和答案配置导出标准 DOCX');
  }catch(e){toast('DOCX 导出失败：'+fail(e))}
+}
+function printAssembly(){
+ if(!S.basket.length)return toast('试题篮为空。');
+ const w=window.open('','_blank');if(!w)return toast('请允许浏览器打开打印窗口。');
+ w.document.write(assemblyHtml());w.document.close();w.focus();w.print();
 }
 function exportAssemblyXlsx(){
  if(!S.basket.length)return toast('试题篮为空。');
