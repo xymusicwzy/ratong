@@ -121,6 +121,17 @@
     <div class="section-heading"><div><h2>智能组卷中心</h2><p>参考专业组卷流程：筛选题库、手动/随机选题、配置分值、预览、保存和规范导出。</p></div></div>
     <div class="panel">
      <div class="form-grid two"><label class="field"><span>试卷名称</span><input id="assembleTitle" placeholder="请输入试卷名称"></label><label class="field"><span>组卷说明</span><input id="assembleDescription" placeholder="可填写考试范围、时长或说明"></label></div>
+     <div class="form-grid three">
+      <label class="field"><span>纸张尺寸</span><select id="assemblyPaperSize"><option value="A4">A4（默认）</option><option value="A3">A3</option><option value="B4">B4</option></select></label>
+      <label class="field"><span>打印方向</span><select id="assemblyOrientation"><option value="portrait">纵向</option><option value="landscape">横向</option></select></label>
+      <label class="field"><span>打印分栏</span><select id="assemblyColumns"><option value="1">单栏</option><option value="2">双栏</option></select></label>
+     </div>
+     <div class="toolbar">
+      <label class="checkline"><input id="assemblyIncludeAnswers" type="checkbox">附答案</label>
+      <label class="checkline"><input id="assemblyIncludeExplanations" type="checkbox">附解析</label>
+      <label class="checkline"><input id="assemblyIncludeSources" type="checkbox" checked>显示来源</label>
+      <select id="assemblyAnswerPosition"><option value="after">答案放在每题后</option><option value="end">答案统一放在文末</option></select>
+     </div>
      <div class="toolbar"><button id="saveAssembly">保存组卷草稿</button><button id="exportAssemblyDocx" class="outline-button">导出 Word（DOCX）</button><button id="exportAssemblyXlsx" class="outline-button">导出 Excel</button><button id="printAssembly" class="outline-button">打印 / PDF</button><button id="clearAssembly" class="danger-button">清空试题篮</button></div>
      <div id="assembleMessage" class="inline-message"></div>
     </div>
