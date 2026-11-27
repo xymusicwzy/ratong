@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>仁爱通邮件模板安装说明</title><style>body{font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.8;color:#26304d;background:#f5f6fb;margin:0;padding:28px}main{max-width:860px;margin:auto;background:#fff;padding:30px;border-radius:18px;border:1px solid #e5e8f2}h1{font-size:25px}h2{font-size:18px;margin-top:26px}code{background:#f0f2fa;padding:3px 6px;border-radius:5px}a{color:#545ec5}</style></head><body><main>
+<h1>仁爱通 · Supabase 邮件模板安装说明</h1>
+<p>本目录包含与当前网站认证流程配套的 HTML 邮件模板。请管理员在 Supabase 项目 <b>Authentication → Email Templates</b> 中逐项复制对应 HTML 内容。</p>
+<h2>模板对应关系</h2>
+<ul><li><b>Confirm signup / 注册确认：</b><a href="./signup-otp.html">signup-otp.html</a>。使用 <code>{{ .Token }}</code>，网站页面输入 6 位 OTP。</li><li><b>Invite user / 用户邀请：</b><a href="./invite.html">invite.html</a>。使用 <code>{{ .ConfirmationURL }}</code>。</li><li><b>Reset password / 密码重置：</b><a href="./recovery.html">recovery.html</a>。使用 <code>{{ .ConfirmationURL }}</code>。</li><li><b>Magic link / 邮箱快捷登录：</b><a href="./magic-link.html">magic-link.html</a>。使用 <code>{{ .Token }}</code>，并在网站输入验证码。</li><li><b>Change email / 邮箱变更：</b><a href="./change-email.html">change-email.html</a>。</li></ul>
+<h2>必须核对的项目设置</h2>
+<ol><li>在 Authentication → URL Configuration 中将 Site URL 设置为 <code>https://xymusicwzy.github.io/ratong/</code>，并允许对应 Redirect URL。</li><li>在 Authentication → Providers → Email 中启用 Email OTP，并设置合适的验证码有效期和频率限制。</li><li>配置自己的 SMTP 服务及发件人邮箱。不要把 SMTP 密码、服务密钥或 service_role key 放入网站代码。</li><li>确认 Invite / Recovery / Email OTP 均能收到邮件，再用新注册邮箱完成实际测试。</li></ol>
+<h2>Google Authenticator</h2>
+<p>OA 的“安全与邮件”页面已提供 TOTP 绑定、二维码扫描和动态码验证。管理员应为 OA 管理账号绑定验证器。验证码失效或遗失时，应由管理员按安全流程处理账号恢复。</p>
+<h2>注意</h2>
+<p>网站已提供 OTP 输入与验证代码，但 Supabase Dashboard 的邮件模板和 SMTP 发送服务属于项目 Auth 配置，不会通过 GitHub Pages HTML 自动变更。请在粘贴模板并配置 SMTP 后，再进行注册、邀请和密码重置的真实收件测试。</p>
+</main></body></html>
