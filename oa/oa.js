@@ -108,7 +108,7 @@ function bindEvents(){
  $('refreshPapers').onclick=()=>{loadPapers();loadQuestions()};
  $('searchQuestions').onclick=loadQuestions;$('questionPaperFilter').onchange=loadQuestions;
  $('questionStatusFilter').onchange=loadQuestions;$('questionSearch').onkeydown=e=>{if(e.key==='Enter')loadQuestions()};
- $('bulkDeleteQuestions').onclick=bulkDeleteQuestions;$('bulkVerify').onclick=bulkVerify;$('exportQuestions').onclick=exportQuestions;
+ $('bulkDeleteQuestions').onclick=bulkDeleteQuestions;$('bulkVerify').onclick=bulkVerify;$('bulkUpdateQuestions').onclick=bulkUpdateQuestions;$('exportQuestions').onclick=exportQuestions;
  $('paperForm').onsubmit=savePaper;$('deletePaper').onclick=deletePaper;
  $('questionForm').onsubmit=saveQuestion;
  $('randomAssemble').onclick=randomAssemble;$('addSelected').onclick=addSelected;
@@ -409,6 +409,25 @@ async function bulkDeleteQuestions(){
  const ids=selectedQuestionIds();if(!ids.length)return toast('请先勾选要删除的题目。');
  if(!confirm('确认删除 '+ids.length+' 道题？所属试卷如已有答题记录，系统会自动拒绝删除。'))return;
  try{const {data,error}=await sb.rpc('chem_oa_delete_questions',{p_question_ids:ids});if(error)throw error;toast('已删除 '+data+' 道题');await loadQuestions();await loadPapers()}catch(e){toast(fail(e))}
+}
+async function bulkUpdateQuestions(){
+ const ids=selectedQuestionIds();if(!ids.length)return toast('请先勾选要修改的题目。');
+ const sourceStatus=$('bulkQuestionStatus').value||null;
+ const verificationStatus=$('bulkAnswerStatus').value||null;
+ const scoreText=$('bulkQuestionScore').value.trim();
+ const score=scoreText===''?null:Number(scoreText);
+ if(sourceStatus===null&&verificationStatus===null&&score===null)return toast('请至少选择一项批量修改内容。');
+ if(score!==null&&(!Number.isFinite(score)||score<0))return toast('分值必须为非负数。');
+ if(verificationStatus==='verified'||verificationStatus==='teacher_verified'){
+  if(!confirm('将所选题目标记为已核验。系统会拒绝缺失答案的题目。是否继续？'))return;
+ }else if(!confirm('确认对选中的 '+ids.length+' 道题执行批量修改？'))return;
+ try{
+  const {data,error}=await sb.rpc('chem_oa_bulk_update_questions',{p_question_ids:ids,p_source_status:sourceStatus,p_verification_status:verificationStatus,p_score:score});
+  if(error)throw error;
+  toast('批量修改完成：'+data+' 道题已更新。');
+  $('bulkQuestionStatus').value='';$('bulkAnswerStatus').value='';$('bulkQuestionScore').value='';
+  await loadQuestions();await loadPapers();
+ }catch(e){toast(fail(e))}
 }
 async function bulkVerify(){
  const ids=selectedQuestionIds();if(!ids.length)return toast('请先勾选题目。');
