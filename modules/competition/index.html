@@ -172,4 +172,48 @@ const mathObserver=new MutationObserver(mutations=>{
 });
 window.addEventListener('DOMContentLoaded',()=>{mathObserver.observe(document.body,{childList:true,subtree:true});if(window.MathJax?.startup?.promise)window.MathJax.startup.promise.then(queueMathTypeset);init();});
 </script>
+
+<style id="ratong-ai-style">
+#ratongAiLaunch{position:fixed;right:24px;bottom:24px;z-index:10020;border:0;border-radius:999px;background:#17364d;color:#fff;padding:14px 19px;font:700 14px system-ui;box-shadow:0 8px 28px #0e263c35;cursor:pointer}
+#ratongAiPanel{position:fixed;right:24px;bottom:86px;z-index:10021;width:min(410px,calc(100vw - 28px));height:min(590px,calc(100vh - 120px));background:#fff;border:1px solid #dce5eb;border-radius:18px;box-shadow:0 20px 70px #102a4030;display:none;flex-direction:column;overflow:hidden;font-family:system-ui,"Microsoft YaHei",sans-serif}
+#ratongAiPanel.open{display:flex}
+#ratongAiPanel .ai-head{background:#17364d;color:#fff;padding:16px 18px;display:flex;align-items:center;justify-content:space-between}
+#ratongAiPanel .ai-head small{display:block;color:#c5d5df;font-size:11px;margin-top:3px}
+#ratongAiPanel .ai-close{background:#ffffff20;color:#fff;border:0;border-radius:8px;padding:7px 10px;cursor:pointer}
+#ratongAiMessages{flex:1;overflow:auto;padding:15px;background:#f6f8fa;display:flex;flex-direction:column;gap:10px}
+#ratongAiMessages .ai-msg{max-width:92%;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:13px;padding:11px 13px;border-radius:13px}
+#ratongAiMessages .ai-msg.assistant{align-self:flex-start;background:#fff;border:1px solid #e4ebef;color:#293d4c}
+#ratongAiMessages .ai-msg.user{align-self:flex-end;background:#e5eff4;color:#17364d}
+#ratongAiMessages .ai-msg.error{background:#fff0ee;color:#a33d31}
+#ratongAiPanel .ai-compose{padding:12px;border-top:1px solid #e6edf1;background:#fff}
+#ratongAiPanel textarea{width:100%;height:74px;resize:vertical;border:1px solid #d5e0e7;border-radius:10px;padding:10px;font:13px/1.5 system-ui,sans-serif;box-sizing:border-box;outline-color:#6d9da7}
+#ratongAiPanel .ai-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px}
+#ratongAiPanel .ai-actions small{font-size:11px;color:#81909b}
+#ratongAiPanel .ai-send{background:#17364d;color:#fff;border:0;border-radius:9px;padding:9px 16px;font-weight:700;cursor:pointer}
+#ratongAiPanel .ai-send:disabled{opacity:.5;cursor:wait}
+@media(max-width:600px){#ratongAiLaunch{right:14px;bottom:14px}#ratongAiPanel{right:8px;bottom:74px;width:calc(100vw - 16px);height:min(68vh,600px)}}
+</style>
+<button id="ratongAiLaunch" type="button">✦ AI 助学</button>
+<section id="ratongAiPanel" aria-label="仁爱通 AI 助学">
+ <header class="ai-head"><div><strong>仁爱通 AI 助学</strong><small>学科竞赛中心 · Google Gemini</small></div><button class="ai-close" id="ratongAiClose" type="button">关闭</button></header>
+ <div id="ratongAiMessages"><div class="ai-msg assistant">您好！我是仁爱通 AI 助学老师。您可以直接提问，也可以让我讲解知识点、分析错题或设计练习。</div></div>
+ <div class="ai-compose"><textarea id="ratongAiInput" placeholder="输入问题，例如：请讲解这个知识点……"></textarea><div class="ai-actions"><small id="ratongAiQuota">每日学生额度 20 次；教师/管理员 60 次</small><button id="ratongAiSend" class="ai-send" type="button">发送</button></div></div>
+</section>
+<script>
+(()=>{'use strict';
+const URL='https://mfmmwfdccspibvekoodb.supabase.co',KEY='sb_publishable_83WSC0kHUHRLhTUDgxJEoQ_L9_ur8cS';
+const client=window.supabase?.createClient(URL,KEY,{auth:{storageKey:'ratong-unified-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
+const panel=document.getElementById('ratongAiPanel'),launch=document.getElementById('ratongAiLaunch'),messages=document.getElementById('ratongAiMessages'),input=document.getElementById('ratongAiInput'),send=document.getElementById('ratongAiSend'),quota=document.getElementById('ratongAiQuota'),history=[];
+function add(text,role='assistant',error=false){const d=document.createElement('div');d.className='ai-msg '+role+(error?' error':'');d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight;return d}
+launch.addEventListener('click',()=>{panel.classList.add('open');input.focus()});
+document.getElementById('ratongAiClose').addEventListener('click',()=>panel.classList.remove('open'));
+async function submit(){const message=input.value.trim();if(!message||send.disabled)return;if(!client){add('AI 助学客户端加载失败，请刷新页面。','assistant',true);return}
+const {data:sessionData,error:sessionError}=await client.auth.getSession();if(sessionError||!sessionData.session){add('请先登录仁爱通，再使用 AI 助学。','assistant',true);return}
+add(message,'user');history.push({role:'user',text:message});input.value='';send.disabled=true;send.textContent='思考中…';const pending=add('正在思考，请稍候…');
+try{const {data,error}=await client.functions.invoke('ratong-gemini-tutor',{body:{module:'competition',message,history:history.slice(-8)}});pending.remove();if(error)throw error;if(data?.error)throw new Error(data.error);if(!data?.answer)throw new Error('AI 暂时没有返回内容，请稍后重试。');add(data.answer);history.push({role:'assistant',text:data.answer});if(data.used_today&&data.daily_limit)quota.textContent='今日已使用 '+data.used_today+' / '+data.daily_limit+' 次'}
+catch(e){pending.remove();add(e?.message||'AI 服务暂时不可用，请稍后重试。','assistant',true)}
+finally{send.disabled=false;send.textContent='发送';input.focus()}}
+send.addEventListener('click',submit);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit()}});
+})();
+</script>
 </body></html>
