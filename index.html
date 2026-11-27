@@ -98,10 +98,12 @@ function authNotice(message,type=''){const el=$('authMessage');el.textContent=me
 function renderAuth(mode='login'){
  authMode=mode;
  document.querySelectorAll('[data-auth-mode]').forEach(b=>b.classList.toggle('active',b.dataset.authMode===mode));
- $('authHeading').textContent=({login:'登录后开始学习',signup:'创建仁爱通账号',reset:'找回登录密码',recovery:'设置新密码',emailotp:'邮箱验证码登录',verify_signup:'邮箱注册验证',verify_login:'邮箱登录验证'})[mode]||'登录仁爱通';
- $('authIntro').textContent=mode==='signup'?'注册后默认开放全部学生学习功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':mode.startsWith('verify_')?'请输入邮件中收到的 6 位验证码。':'一个账号通行英语学习中心与竞赛网。学习记录按板块保存，身份与权限统一管理。';
+ $('authHeading').textContent=({login:'登录后开始学习',signup:'创建仁爱通账号',reset:'找回登录密码',recovery:'设置新密码',emailotp:'邮箱验证码登录',verify_signup:'邮箱注册验证',verify_login:'邮箱登录验证',confirmotp:'邮箱验证码验证',inviteotp:'接受仁爱通邀请'})[mode]||'登录仁爱通';
+ $('authIntro').textContent=mode==='signup'?'注册后默认开放全部学生学习功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':mode==='inviteotp'?'请填写管理员邀请时使用的邮箱，并输入邀请邮件中的 6 位验证码。':mode==='confirmotp'?'请填写注册邮箱并输入注册确认邮件中的 6 位验证码。':mode.startsWith('verify_')?'请输入邮件中收到的 6 位验证码。':'一个账号通行英语学习中心与竞赛网。学习记录按板块保存，身份与权限统一管理。';
  let html='';
- if(mode==='verify_signup'||mode==='verify_login'){
+ if(mode==='confirmotp'||mode==='inviteotp'){
+  html='<div class="auth-field"><label>邮箱地址</label><input id="authEmail" type="email" autocomplete="email" placeholder="请输入接收邮件的邮箱" required></div><div class="auth-field"><label>6 位邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="输入邮件中的 6 位数字" required></div><button class="auth-submit" type="submit">'+(mode==='inviteotp'?'验证邀请并设置密码':'验证邮箱并登录')+'</button>';
+ }else if(mode==='verify_signup'||mode==='verify_login'){
   html='<div class="auth-field"><label>验证邮箱</label><input id="authEmail" type="email" value="'+String(pendingOtpEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></div><div class="auth-field"><label>6 位邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="输入邮件中的 6 位数字" required></div><button class="auth-submit" type="submit">验证并继续</button><button id="authResendOtp" type="button" class="auth-submit" style="margin-top:8px;background:#eef0f8;color:#2f3b66">重新发送验证码</button>';
  }else if(mode==='recovery'){
   html='<div class="auth-field"><label>新密码（至少8位）</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></div><div class="auth-field"><label>确认新密码</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></div><button class="auth-submit" type="submit">保存新密码</button>';
@@ -132,6 +134,20 @@ async function submitAuth(ev){
  const btn=$('authForm').querySelector('button[type=submit]');if(btn){btn.disabled=true;btn.textContent='正在处理…'}
  try{
   if(!authClient)throw new Error('认证服务暂不可用，请刷新页面后重试。');
+  if(authMode==='confirmotp'||authMode==='inviteotp'){
+   const email=$('authEmail').value.trim().toLowerCase(),code=$('authOtp').value.trim();
+   if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))throw new Error('请输入有效邮箱地址。');
+   if(!/^\\d{6}$/.test(code))throw new Error('请输入 6 位数字验证码。');
+   const {data,error}=await authClient.auth.verifyOtp({email,token:code,type:authMode==='inviteotp'?'invite':'email'});if(error)throw error;
+   currentSession=data.session;
+   if(authMode==='inviteotp'){
+    renderAuth('recovery');
+    authNotice('邀请邮箱验证成功。请设置新的登录密码以完成账号开通。','success');
+   }else{
+    await showApp(data.session);
+   }
+   return;
+  }
   if(authMode==='verify_signup'||authMode==='verify_login'){
    const code=$('authOtp').value.trim();if(!/^\d{6}$/.test(code))throw new Error('请输入 6 位数字验证码。');
    const {data,error}=await authClient.auth.verifyOtp({email:pendingOtpEmail,token:code,type:'email'});if(error)throw error;
@@ -218,6 +234,8 @@ async function initPortal(){
  });
  const {data,error}=await authClient.auth.getSession();
  if(error)throw error;
+ if(location.hash.startsWith('#invite')){hideApp();renderAuth('inviteotp');return}
+ if(location.hash.startsWith('#confirm-email')){hideApp();renderAuth('confirmotp');return}
  if(location.hash.includes('type=recovery')||location.hash.includes('type=invite')){currentSession=data.session;hideApp();renderAuth('recovery');return}
  if(data.session){await showApp(data.session);if(location.hash==='#templates')showPage('templates')}else{hideApp();renderAuth('login')}
 }
