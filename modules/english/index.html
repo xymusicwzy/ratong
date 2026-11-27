@@ -271,14 +271,7 @@ $('loadAudit').onclick=()=>loadAuditLogs().catch(e=>toast(err(e),'error'));async
 $('refreshPracticeHistory').onclick=()=>loadPracticeHistory().catch(e=>toast(err(e),'error'));
 (async()=>{if(!db){toast('Supabase SDK 没有加载。请检查 CDN 网络连接。','error');return}try{const{data,error}=await db.auth.getSession();if(error)throw error;S.session=data.session;await authRefresh();await signupMode();const{error:ping}=await db.from('rt_wordbooks').select('id',{head:true,count:'exact'}).eq('status','published');if(ping){$('cloudPill').textContent='云端权限待检查';$('cloudPill').className='notice error'}else{$('cloudPill').textContent='Supabase 云端已连接';$('cloudPill').className='status-pill'}await loadBooks();await loadDashboard();if(location.hash.includes('type=recovery')){go('auth');renderAuth('recovery')}}catch(e){$('cloudPill').textContent='连接异常';toast(err(e),'error')}})();
 })();
-</script><script>
-(()=>{const run=()=>{if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise([document.body]).catch(e=>console.warn('MathJax:',e))};
- const obs=new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===3||(n.nodeType===1&&!n.matches('mjx-container,.MathJax')&&!n.closest?.('mjx-container,.MathJax')))))run()});
- obs.observe(document.body,{childList:true,subtree:true});
- if(window.MathJax?.startup?.promise)window.MathJax.startup.promise.then(run);else window.addEventListener('load',run,{once:true});
-})();
-</script>
-</body></html>
+</script></body></html>
 ,'
 <body>
 <div class="layout">
@@ -808,4 +801,11 @@ $('loadAudit').onclick=()=>loadAuditLogs().catch(e=>toast(err(e),'error'));async
 $('refreshPracticeHistory').onclick=()=>loadPracticeHistory().catch(e=>toast(err(e),'error'));
 (async()=>{if(!db){toast('Supabase SDK 没有加载。请检查 CDN 网络连接。','error');return}try{const{data,error}=await db.auth.getSession();if(error)throw error;S.session=data.session;await authRefresh();await signupMode();const{error:ping}=await db.from('rt_wordbooks').select('id',{head:true,count:'exact'}).eq('status','published');if(ping){$('cloudPill').textContent='云端权限待检查';$('cloudPill').className='notice error'}else{$('cloudPill').textContent='Supabase 云端已连接';$('cloudPill').className='status-pill'}await loadBooks();await loadDashboard();if(location.hash.includes('type=recovery')){go('auth');renderAuth('recovery')}}catch(e){$('cloudPill').textContent='连接异常';toast(err(e),'error')}})();
 })();
-</script></body></html>
+</script></body><script>
+(()=>{const run=()=>{if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise([document.body]).catch(e=>console.warn('MathJax:',e))};
+ const obs=new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===3||(n.nodeType===1&&!n.matches('mjx-container,.MathJax')&&!n.closest?.('mjx-container,.MathJax')))))run()});
+ obs.observe(document.body,{childList:true,subtree:true});
+ if(window.MathJax?.startup?.promise)window.MathJax.startup.promise.then(run);else window.addEventListener('load',run,{once:true});
+})();
+</script>
+</html>
