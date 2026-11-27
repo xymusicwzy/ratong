@@ -154,7 +154,7 @@ async function submitAuth(mode){
   }
   if(mode==='magic'||mode==='emailotp'){
    const{error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:redirectUrl(),shouldCreateUser:false}});if(error)throw error;
-   pendingAuthEmail=email;renderAuth('verify_email');toast('邮箱验证码已提交发送，请查收邮件。','success');return;
+   pendingAuthEmail=email;renderAuth('verify_email');toast('邮箱验证码发送请求已提交，请检查收件箱和垃圾邮件。','success');return;
   }
   if(mode==='reset'){
    const{error}=await db.auth.resetPasswordForEmail(email,{redirectTo:redirectUrl()});if(error)throw error;
