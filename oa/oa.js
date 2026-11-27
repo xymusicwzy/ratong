@@ -100,9 +100,9 @@ function bindEvents(){
  $('exportAccounts').onclick=exportAccounts;
  $('prevUsers').onclick=()=>{S.userPage=Math.max(1,S.userPage-1);loadAccounts()};
  $('nextUsers').onclick=()=>{if(S.users.length>=100){S.userPage++;loadAccounts()}};
- $('previewRoster').onclick=previewRoster;$('importRoster').onclick=importRoster;
+ $('downloadRosterTemplate').onclick=downloadRosterTemplate;$('previewRoster').onclick=previewRoster;$('importRoster').onclick=importRoster;
  $('refreshRoster').onclick=loadRoster;
- $('restoreBank').onclick=restoreBank;$('exportFullBank').onclick=exportFullBank;
+ $('downloadCompetitionTemplate').onclick=downloadCompetitionTemplate;$('restoreBank').onclick=restoreBank;$('exportFullBank').onclick=exportFullBank;
  $('previewWordbook').onclick=previewWordbook;$('importWordbook').onclick=importWordbook;
  $('downloadWordsTemplate').onclick=downloadWordsTemplate;$('refreshBooks').onclick=loadWordbooks;
  $('refreshPapers').onclick=()=>{loadPapers();loadQuestions()};
@@ -294,7 +294,24 @@ async function importWordbook(){
 function downloadWordsTemplate(){
  const headers=['word','us_phonetic','uk_phonetic','pos','definition','explanation','example_sentence','example_translation','audio_us_url','audio_uk_url','tags'];
  const sample=['ability','/əˈbɪləti/','/əˈbɪləti/','n.','能力；才能','具备某种能力的状态','She has the ability to learn quickly.','她有快速学习的能力。','','','CET-4'];
- download('仁爱通_英语词书导入模板.csv',csvBlob([headers,sample]));
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([headers,sample]),'Words');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['字段','说明'],['word','必填，英文单词或短语'],['definition','必填，中文释义'],['tags','多个标签用英文分号分隔'],['audio_us_url / audio_uk_url','可选，音频 HTTPS 地址'],['来源与授权','导入时在页面填写来源和授权说明']]),'填写说明');
+ XLSX.writeFile(wb,'仁爱通_英语词书导入模板.xlsx');
+}
+function downloadRosterTemplate(){
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['student_no','display_name','email','class_name','status'],['20260001','张同学','student@example.com','2026级1班','inactive']]),'学生名单');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['字段','说明'],['student_no','必填；用于学生名册唯一匹配'],['display_name','必填；学生姓名或显示名称'],['email','可选；邀请恢复账号时使用，导入前需核实'],['class_name','可选；班级或历史归属'],['status','inactive / active / graduated；历史账号建议 inactive']]),'填写说明');
+ XLSX.writeFile(wb,'仁爱通_学生名单导入模板.xlsx');
+}
+function downloadCompetitionTemplate(){
+ const headers=['年份','试卷名称','题号','来源编号','题型','分题号','原卷题号','题干','选项JSON','分值','题目状态','来源备注','答案','解析','答案来源','答案核验状态'];
+ const sample=[2026,'示例试卷',1,'2026-demo-001','单选',1,1,'请替换为真实题干','[{"key":"A","text":"选项A"},{"key":"B","text":"选项B"}]',2,'needs_review','注明原始文件和页码','["A"]','请填写解析','source','needs_review'];
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([headers,sample]),'题库导入');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['字段','说明'],['题型','单选 / 多选 / 判断 / 填空'],['选项JSON','填写 JSON 数组；没有选项可填 []'],['答案','建议填写 JSON 数组；没有可靠答案时留空'],['答案来源','source / teacher_verified / missing'],['答案核验状态','missing / needs_review / source_answer / verified / teacher_verified'],['题目状态','ready / needs_review / source_incomplete'],['重要','所有导入题库默认进入草稿，请核验后再发布']]),'填写说明');
+ XLSX.writeFile(wb,'仁爱通_竞赛题库批量导入模板.xlsx');
 }
 async function loadWordbooks(){
  try{
