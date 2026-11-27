@@ -86,7 +86,6 @@ function bindEvents(){
  $('saveAuthSettings').onclick=saveAuthSettings;
  $('enrollTotp').onclick=enrollTotp;$('refreshMfa').onclick=loadMfa;$('verifyTotp').onclick=verifyTotp;
  $('exportQuestions').onclick=exportQuestions;
- $('paperTable').addEventListener('click',paperAction);
 }
 function statusPill(s){
  const names={published:'已发布',draft:'草稿 / 已撤回',archived:'已归档',ready:'可用',needs_review:'待复核',source_incomplete:'资料不完整',verified:'已核验',teacher_verified:'教师已复核',source_answer:'原始答案',missing:'缺答案',active:'正常',inactive:'未激活',suspended:'已暂停'};
@@ -292,7 +291,6 @@ async function loadPapers(){
   await loadOverview();
  }catch(e){$('paperTable').innerHTML='<div class="empty">'+esc(fail(e))+'</div>'}
 }
-function paperAction(e){const b=e.target.closest('[data-edit-paper],[data-archive-paper],[data-delete-paper]');if(!b)return;if(b.dataset.editPaper)openPaper(b.dataset.editPaper);if(b.dataset.archivePaper)quickPaperStatus(b.dataset.archivePaper);if(b.dataset.deletePaper)deletePaperById(b.dataset.deletePaper)}
 function openPaper(id){
  const p=S.papers.find(x=>x.id===id);if(!p)return;
  $('editPaperId').value=id;$('editPaperYear').value=p.year;$('editPaperTitle').value=p.title;$('editPaperSource').value=p.source_file||'';$('editPaperDescription').value=p.description||'';$('editPaperStatus').value=p.status;$('paperMessage').textContent='';$('paperDialog').classList.remove('hidden');
