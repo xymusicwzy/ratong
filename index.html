@@ -41,6 +41,7 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
    <button type="button" class="active" data-auth-mode="login">登录</button>
    <button type="button" data-auth-mode="signup">注册</button>
    <button type="button" data-auth-mode="reset">找回密码</button>
+   <button type="button" data-auth-mode="emailotp">邮箱验证码</button>
   </div>
   <form id="authForm"></form>
   <div id="authMessage" class="auth-message" role="status" aria-live="polite"></div>
@@ -52,8 +53,9 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
  <nav class="nav" aria-label="主导航">
   <button class="active" data-page="home">平台首页</button>
   <button data-page="english">英语学习</button>
-  <button data-page="competition">竞赛学习</button>
+  <button data-page="competition">竞赛网</button>
   <button data-page="templates">模板下载</button>
+  <button id="oaNav" data-page="oa" hidden>综合管理 OA</button>
  </nav>
  <div class="user"><span id="signedInLabel">已登录</span><button id="signOutBtn" type="button">退出登录</button></div>
 </header>
@@ -80,6 +82,7 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
    <article class="template-card"><div class="eyebrow" style="color:#3b8c8a">ENGLISH LEARNING</div><h3>英语词书导入模板</h3><p>适用于单词打卡板块的 Excel / CSV 导入。包含单词、音标、词性、释义、例句、翻译与音频链接等字段。</p><button onclick="downloadTemplate('words')">下载词书 CSV 模板</button></article>
    <article class="template-card"><div class="eyebrow" style="color:#3b8c8a">CHEMISTRY COMPETITION</div><h3>化学竞赛题库导入模板</h3><p>适用于竞赛中心的批量题库导入。包含年份、试卷、题型、题干、选项、答案、解析、分值与核验信息。</p><button onclick="downloadTemplate('chem')">下载竞赛题库 CSV 模板</button></article>
   </div>
+  <div class="template-card" style="margin-top:16px"><div class="eyebrow">RESTORE & EMAIL</div><h3>学生名单与邮件模板</h3><p>下载历史学生导入模板，查看注册 OTP、账号邀请、密码重置及邮箱快捷登录邮件模板。</p><button onclick="downloadTemplate('roster')">下载学生名单模板</button> <a href="./templates/email/README.html">邮件模板安装说明 ↗</a></div>
   <div class="tip">提示：模板是字段格式示例。请在导入前检查题目答案与解析；竞赛题库支持单选、多选、判断与填空等题型。不要将账号密码或服务端密钥填写到模板中。</div>
  </section>
 </main>
@@ -88,51 +91,58 @@ const SB_URL='https://mfmmwfdccspibvekoodb.supabase.co';
 const SB_KEY='sb_publishable_83WSC0kHUHRLhTUDgxJEoQ_L9_ur8cS';
 const ROOT_URL='https://xymusicwzy.github.io/ratong/';
 const authClient=window.supabase?.createClient(SB_URL,SB_KEY,{auth:{storageKey:'ratong-unified-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
-let currentSession=null,currentProfile=null,authMode='login';
+let currentSession=null,currentProfile=null,authMode='login',pendingOtpEmail='';
 const pages=['home','english','competition','templates'];
 const $=id=>document.getElementById(id);
 function authNotice(message,type=''){const el=$('authMessage');el.textContent=message||'';el.className='auth-message '+type}
 function renderAuth(mode='login'){
  authMode=mode;
  document.querySelectorAll('[data-auth-mode]').forEach(b=>b.classList.toggle('active',b.dataset.authMode===mode));
- $('authHeading').textContent=({login:'登录后开始学习',signup:'创建仁爱通账号',reset:'找回登录密码',recovery:'设置新密码'})[mode]||'登录仁爱通';
- $('authIntro').textContent=mode==='signup'?'注册后即可使用同一账号进入英语学习与学科竞赛。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':'一个账号通行英语学习中心与化学竞赛中心。学习记录按板块保存，身份与权限统一管理。';
+ $('authHeading').textContent=({login:'登录后开始学习',signup:'创建仁爱通账号',reset:'找回登录密码',recovery:'设置新密码',emailotp:'邮箱验证码登录',verify_signup:'邮箱注册验证',verify_login:'邮箱登录验证'})[mode]||'登录仁爱通';
+ $('authIntro').textContent=mode==='signup'?'注册后默认开放全部学生学习功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':mode.startsWith('verify_')?'请输入邮件中收到的 6 位验证码。':'一个账号通行英语学习中心与竞赛网。学习记录按板块保存，身份与权限统一管理。';
  let html='';
- if(mode==='recovery'){
+ if(mode==='verify_signup'||mode==='verify_login'){
+  html='<div class="auth-field"><label>验证邮箱</label><input id="authEmail" type="email" value="'+String(pendingOtpEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></div><div class="auth-field"><label>6 位邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="输入邮件中的 6 位数字" required></div><button class="auth-submit" type="submit">验证并继续</button>';
+ }else if(mode==='recovery'){
   html='<div class="auth-field"><label>新密码（至少8位）</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></div><div class="auth-field"><label>确认新密码</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></div><button class="auth-submit" type="submit">保存新密码</button>';
  }else{
   html='<div class="auth-field"><label>邮箱</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com" required></div>';
-  if(mode==='signup') html+='<div class="auth-field"><label>姓名 / 昵称</label><input id="authName" maxlength="60" autocomplete="name" placeholder="请输入显示名称"></div>';
-  if(mode!=='reset') html+='<div class="auth-field"><label>密码（至少8位）</label><input id="authPassword" type="password" minlength="8" autocomplete="'+(mode==='signup'?'new-password':'current-password')+'" required></div>';
-  if(mode==='signup') html+='<div class="auth-field"><label>确认密码</label><input id="authPassword2" type="password" minlength="8" autocomplete="new-password" required></div>';
-  html+='<button class="auth-submit" type="submit">'+({login:'登录仁爱通',signup:'注册并进入平台',reset:'发送密码重置邮件'})[mode]+'</button>';
+  if(mode==='signup')html+='<div class="auth-field"><label>姓名 / 昵称</label><input id="authName" maxlength="60" autocomplete="name" placeholder="请输入显示名称"></div>';
+  if(mode!=='reset'&&mode!=='emailotp')html+='<div class="auth-field"><label>密码（至少8位）</label><input id="authPassword" type="password" minlength="8" autocomplete="'+(mode==='signup'?'new-password':'current-password')+'" required></div>';
+  if(mode==='signup')html+='<div class="auth-field"><label>确认密码</label><input id="authPassword2" type="password" minlength="8" autocomplete="new-password" required></div>';
+  html+='<button class="auth-submit" type="submit">'+({login:'登录仁爱通',signup:'注册并发送验证码',reset:'发送密码重置邮件',emailotp:'发送邮箱验证码'})[mode]+'</button>';
  }
- $('authForm').innerHTML=html;
- $('authForm').onsubmit=submitAuth;
- authNotice('');
+ $('authForm').innerHTML=html;$('authForm').onsubmit=submitAuth;authNotice('');
 }
 async function submitAuth(ev){
  ev.preventDefault();
  const btn=$('authForm').querySelector('button[type=submit]');if(btn){btn.disabled=true;btn.textContent='正在处理…'}
  try{
-  if(!authClient) throw new Error('认证服务暂不可用，请刷新页面后重试。');
+  if(!authClient)throw new Error('认证服务暂不可用，请刷新页面后重试。');
+  if(authMode==='verify_signup'||authMode==='verify_login'){
+   const code=$('authOtp').value.trim();if(!/^\d{6}$/.test(code))throw new Error('请输入 6 位数字验证码。');
+   const {data,error}=await authClient.auth.verifyOtp({email:pendingOtpEmail,token:code,type:authMode==='verify_signup'?'signup':'email'});if(error)throw error;
+   currentSession=data.session;await showApp(data.session);return;
+  }
   if(authMode==='recovery'){
-   const p=$('newPassword').value;
-   if(p.length<8||p!==$('confirmPassword').value) throw new Error('密码至少8位，且两次输入必须一致。');
+   const p=$('newPassword').value;if(p.length<8||p!==$('confirmPassword').value)throw new Error('密码至少8位，且两次输入必须一致。');
    const {error}=await authClient.auth.updateUser({password:p});if(error)throw error;
    await authClient.auth.signOut();renderAuth('login');authNotice('密码已更新，请使用新密码登录。','success');return;
   }
   const email=$('authEmail').value.trim().toLowerCase();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('请输入有效邮箱地址。');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('请输入有效邮箱地址。');
   if(authMode==='login'){
    const {data,error}=await authClient.auth.signInWithPassword({email,password:$('authPassword').value});if(error)throw error;
    currentSession=data.session;await showApp(data.session);return;
   }
+  if(authMode==='emailotp'){
+   const {error}=await authClient.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;
+   pendingOtpEmail=email;renderAuth('verify_login');authNotice('邮箱验证码已提交发送。请查收邮件并输入 6 位代码。','success');return;
+  }
   if(authMode==='signup'){
-   const p=$('authPassword').value;
-   if(p.length<8||p!==$('authPassword2').value) throw new Error('密码至少8位，且两次输入必须一致。');
+   const p=$('authPassword').value;if(p.length<8||p!==$('authPassword2').value)throw new Error('密码至少8位，且两次输入必须一致。');
    const {data,error}=await authClient.auth.signUp({email,password:p,options:{data:{display_name:$('authName').value.trim()||email.split('@')[0]},emailRedirectTo:ROOT_URL}});if(error)throw error;
-   if(data.session){currentSession=data.session;await showApp(data.session)}else{renderAuth('login');authNotice('注册申请已提交。请查收邮箱并完成验证，再回来登录。','success')}
+   if(data.session){currentSession=data.session;await showApp(data.session)}else{pendingOtpEmail=email;renderAuth('verify_signup');authNotice('注册验证码已发送。请查收邮件并输入 6 位数字完成验证。','success')}
    return;
   }
   if(authMode==='reset'){
@@ -140,7 +150,7 @@ async function submitAuth(ev){
    authNotice('如果该邮箱已注册，系统已提交密码重置邮件。请检查收件箱和垃圾邮件。','success');
   }
  }catch(e){authNotice(e?.message||'操作失败，请稍后重试。','error')}
- finally{if(btn){btn.disabled=false;btn.textContent=({login:'登录仁爱通',signup:'注册并进入平台',reset:'发送密码重置邮件',recovery:'保存新密码'})[authMode]||'提交'}}
+ finally{if(btn){btn.disabled=false;btn.textContent=({login:'登录仁爱通',signup:'注册并发送验证码',reset:'发送密码重置邮件',recovery:'保存新密码',emailotp:'发送邮箱验证码',verify_signup:'验证并继续',verify_login:'验证并继续'})[authMode]||'提交'}}
 }
 function hideApp(){
  $('authGate').hidden=false;$('appHeader').hidden=true;$('appMain').hidden=true;
@@ -153,6 +163,7 @@ async function showApp(session){
  if(!data) throw new Error('账号资料尚未初始化，请联系管理员完成账号配置。');
  currentProfile=data;
  if(currentProfile.account_status!=='active'){await authClient.auth.signOut();throw new Error('该账号当前不可用，请联系平台管理员。')}
+ $('oaNav').hidden=currentProfile.role!=='admin';
  $('signedInLabel').textContent=(currentProfile.full_name||session.user.email)+' · '+({admin:'管理员',teacher:'教师',student:'学生'}[currentProfile.role]||'学习者');
  $('authGate').hidden=true;$('appHeader').hidden=false;$('appMain').hidden=false;
  showPage('home');
@@ -161,6 +172,7 @@ function showPage(name){
  if(!currentSession){renderAuth('login');return}
  if(name==='english'){location.href=ROOT_URL+'modules/english/';return}
  if(name==='competition'){location.href=ROOT_URL+'modules/competition/';return}
+ if(name==='oa'){if(currentProfile?.role!=='admin'){authNotice('当前账号没有 OA 管理权限。','error');return}location.href=ROOT_URL+'oa/';return}
  pages.forEach(p=>document.getElementById(p).classList.toggle('active',p===name));
  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===name));
  window.scrollTo({top:0,behavior:'smooth'});
@@ -171,11 +183,12 @@ $('signOutBtn').onclick=async()=>{if(!confirm('确定退出仁爱通？'))return
 function downloadTemplate(kind){
  const words=['word','us_phonetic','uk_phonetic','pos','definition','explanation','example_sentence','example_translation','audio_us_url','audio_uk_url','tags'];
  const chem=['年份','试卷名称','题号','题型','题干','A','B','C','D','E','F','答案','解析','分值','来源编号','答案核验状态','答案来源','来源说明'];
- const header=kind==='words'?words:chem;
- const sample=kind==='words'?['example','/ɪɡˈzɑːmpəl/','/ɪɡˈzɑːmpəl/','n.','示例；例子','示例词条，请替换为真实内容','This is an example.','这是一个例子。','','','示例']:['2026','示例试卷','1','单选','请在此填写题干','选项A','选项B','选项C','选项D','','','A','请填写解析','2','2026-示例-001','needs_review','source','请核对原始试题来源'];
+ const roster=['student_no','display_name','email','class_name','status'];
+ const header=kind==='words'?words:kind==='roster'?roster:chem;
+ const sample=kind==='words'?['example','/ɪɡˈzɑːmpəl/','/ɪɡˈzɑːmpəl/','n.','示例；例子','示例词条，请替换为真实内容','This is an example.','这是一个例子。','','','示例']:kind==='roster'?['20260001','张同学','student@example.com','2026级1班','inactive']:['2026','示例试卷','1','单选','请在此填写题干','选项A','选项B','选项C','选项D','','','A','请填写解析','2','2026-示例-001','needs_review','source','请核对原始试题来源'];
  const csv=[header,sample].map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download=kind==='words'?'仁爱通_英语词书导入模板.csv':'仁爱通_化学竞赛题库导入模板.csv';
+ a.href=url;a.download=kind==='words'?'仁爱通_英语词书导入模板.csv':kind==='roster'?'仁爱通_学生名单导入模板.csv':'仁爱通_化学竞赛题库导入模板.csv';
  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
 async function initPortal(){
@@ -187,7 +200,7 @@ async function initPortal(){
  });
  const {data,error}=await authClient.auth.getSession();
  if(error)throw error;
- if(location.hash.includes('type=recovery')){hideApp();renderAuth('recovery');return}
+ if(location.hash.includes('type=recovery')||location.hash.includes('type=invite')){currentSession=data.session;hideApp();renderAuth('recovery');return}
  if(data.session){await showApp(data.session);if(location.hash==='#templates')showPage('templates')}else{hideApp();renderAuth('login')}
 }
 initPortal().catch(e=>{hideApp();authNotice(e?.message||'认证初始化失败，请刷新页面。','error')});
