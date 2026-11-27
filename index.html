@@ -185,7 +185,6 @@ function downloadTemplate(kind){
 }
 async function initPortal(){
  if(!authClient){authNotice('认证组件加载失败，请刷新页面或检查网络。','error');return}
- document.querySelectorAll('[data-auth-mode]').forEach(b=>b.addEventListener('click',()=>renderAuth(b.dataset.authMode)));
  authClient.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){currentSession=session;renderAuth('recovery');hideApp();return}
   if(event==='SIGNED_OUT'){currentSession=null;currentProfile=null;hideApp();renderAuth('login');return}
