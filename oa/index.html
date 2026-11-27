@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#20294f">
+<title>仁爱通 · 综合管理 OA</title>
+<meta name="description" content="仁爱通统一综合管理工作台">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js"></script>
+<link rel="stylesheet" href="./oa.css">
+</head>
+<body>
+<div id="gate" class="gate">
+ <div class="gate-card"><div class="brand-mark">仁</div><h1>仁爱通 · 综合管理 OA</h1><p id="gateMessage">正在验证管理员身份…</p><a href="../">返回仁爱通首页</a></div>
+</div>
+<div id="workspace" class="workspace hidden">
+ <aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="brand-mark">仁</div><div><b>仁爱通 OA</b><small>OPERATIONS CENTER</small></div></div>
+  <div class="admin-chip"><span class="status-dot"></span><span id="adminName">管理员</span><small>已验证管理员身份</small></div>
+  <nav class="nav">
+   <button class="active" data-page="overview"><span>▦</span>总览</button>
+   <button data-page="accounts"><span>♙</span>账号与权限</button>
+   <button data-page="restore"><span>↻</span>历史数据恢复</button>
+   <button data-page="wordbooks"><span>Aa</span>英语词书管理</button>
+   <button data-page="papers"><span>▤</span>竞赛题库管理</button>
+   <button data-page="assemble"><span>▦</span>智能组卷中心</button>
+   <button data-page="audit"><span>⌁</span>操作审计</button>
+   <button data-page="security"><span>⚿</span>安全与邮件</button>
+  </nav>
+  <div class="side-bottom">
+   <a href="../modules/english/">英语学习端 ↗</a>
+   <a href="../modules/competition/">竞赛网 ↗</a>
+   <button id="logout" class="logout">退出登录</button>
+   <small>仁爱通 · 管理员综合工作台</small>
+  </div>
+ </aside>
+ <main class="main">
+  <header class="topbar">
+   <div class="top-left"><button id="menuToggle" class="icon-button">☰</button><div><div class="eyebrow">REN AI TONG / OA</div><h1 id="pageTitle">综合管理总览</h1></div></div>
+   <div class="top-right"><span class="live-pill"><i></i>云端已连接</span><span id="topAdmin" class="top-admin">管理员</span><button id="topSecurity" class="outline-button">账号安全</button></div>
+  </header>
+  <div class="content">
+   <section class="page active" id="page-overview">
+    <div class="welcome"><div><div class="eyebrow light">OPERATIONS & GOVERNANCE</div><h2>综合管理工作台</h2><p>统一管理仁爱通账号、英语词书、竞赛题库、教学资源和历史资料。所有关键操作均保留审计记录。</p></div><div class="welcome-mark">OA</div></div>
+    <div class="stats" id="overviewStats"><div class="stat"><span>注册账号</span><b>—</b><small>加载中</small></div><div class="stat"><span>历史学生名册</span><b>—</b><small>加载中</small></div><div class="stat"><span>竞赛试卷</span><b>—</b><small>加载中</small></div><div class="stat"><span>竞赛题目</span><b>—</b><small>加载中</small></div><div class="stat"><span>英语词书</span><b>—</b><small>加载中</small></div><div class="stat"><span>英语词条</span><b>—</b><small>加载中</small></div></div>
+    <div class="section-heading"><div><h2>管理入口</h2><p>按业务直接进入对应管理模块</p></div></div>
+    <div class="shortcut-grid">
+     <button class="shortcut" data-goto="accounts"><span>♙</span><b>账号与权限</b><small>邀请、角色授权、账号状态与邮箱确认</small></button>
+     <button class="shortcut" data-goto="restore"><span>↻</span><b>历史数据恢复</b><small>学生名册、历史试卷、备份文件与恢复记录</small></button>
+     <button class="shortcut" data-goto="wordbooks"><span>Aa</span><b>英语词书管理</b><small>批量导入、重复校验、审核与发布</small></button>
+     <button class="shortcut" data-goto="papers"><span>▤</span><b>竞赛题库管理</b><small>整套试卷、题目检索、批量更正与核验</small></button>
+     <button class="shortcut" data-goto="assemble"><span>▦</span><b>智能组卷中心</b><small>随机抽题、分值配置、保存、导出与打印</small></button>
+     <button class="shortcut" data-goto="security"><span>⚿</span><b>安全与邮件</b><small>OTP、Google Authenticator、邮件模板和认证配置</small></button>
+    </div>
+    <div class="notice neutral"><b>数据保护提醒</b> 已有学生答卷的整套试卷不能直接物理删除。OA 提供撤回发布、归档和安全删除；涉及历史答题记录的内容会被保护。</div>
+   </section>
+
+   <section class="page" id="page-accounts">
+    <div class="section-heading"><div><h2>账号与权限</h2><p>一个账号通行英语学习与竞赛网；新学生默认开放全部学生学习功能。</p></div><button id="refreshAccounts" class="outline-button">刷新账号</button></div>
+    <div class="panel">
+     <h3>邀请新用户</h3>
+     <div class="form-grid three"><label class="field"><span>邮箱地址</span><input id="inviteEmail" type="email" placeholder="student@example.com"></label><label class="field"><span>初始身份</span><select id="inviteRole"><option value="student">学生（默认）</option><option value="teacher">教师</option><option value="admin">管理员</option></select></label><div class="field end-field"><span>&nbsp;</span><button id="sendInvite">发送邀请邮件</button></div></div>
+     <div id="inviteMessage" class="inline-message"></div>
+    </div>
+    <div class="panel">
+     <div class="toolbar"><input id="accountSearch" placeholder="搜索邮箱、姓名、学号或班级"><select id="accountRole"><option value="">全部角色</option><option value="student">学生</option><option value="teacher">教师</option><option value="admin">管理员</option></select><select id="accountStatus"><option value="">全部状态</option><option value="active">正常</option><option value="suspended">已暂停</option></select><button id="exportAccounts" class="outline-button">导出账号清单</button></div>
+     <div id="accountsTable" class="table-scroll"><div class="empty">正在加载账号…</div></div>
+     <div class="pagination"><span id="accountPageInfo">—</span><button id="prevUsers" class="outline-button" disabled>上一页</button><button id="nextUsers" class="outline-button">下一页</button></div>
+    </div>
+   </section>
+
+   <section class="page" id="page-restore">
+    <div class="section-heading"><div><h2>历史数据恢复中心</h2><p>把原有学生名册、词书、竞赛试卷和 JSON 备份的恢复入口开放给 OA 管理员。</p></div></div>
+    <div class="panel">
+     <h3>历史学生名册</h3>
+     <p class="muted">支持 CSV / XLSX。导入后进入历史名册；核实邮箱后，可逐人发送邀请恢复登录。名册记录不等于已恢复账号。</p>
+     <div class="toolbar"><a class="outline-link" href="../templates/import/学生名单导入模板.csv" download>下载学生名单模板</a><input type="file" id="rosterFile" accept=".csv,.xlsx,.xls"><button id="previewRoster" class="outline-button">预览并校验</button><button id="importRoster" disabled>导入名册</button></div>
+     <div id="rosterReport" class="inline-message"></div><div id="rosterPreview" class="table-scroll"></div>
+     <div class="section-heading compact"><div><h3>当前历史学生档案</h3><p>可逐条邀请恢复登录，或调整名册状态。</p></div><button id="refreshRoster" class="outline-button">刷新名册</button></div>
+     <div id="rosterTable" class="table-scroll"><div class="empty">加载中…</div></div>
+    </div>
+    <div class="panel">
+     <h3>历史竞赛题库备份恢复</h3>
+     <p class="muted">支持仁爱通 JSON 题库备份和 Excel 题库模板。导入后全部先进入草稿状态，需核验后再发布。</p>
+     <div class="toolbar"><input type="file" id="bankRestoreFile" accept=".json,.xlsx,.xls,.csv"><button id="restoreBank" class="outline-button">校验并恢复题库</button><button id="exportFullBank" class="outline-button">导出当前题库 JSON</button></div>
+     <div id="bankRestoreReport" class="inline-message"></div>
+    </div>
+    <div class="panel">
+     <h3>数据库备份文件说明</h3>
+     <p class="muted">Supabase 的 .backup / .backup.gz 属于 PostgreSQL 原生备份格式，不能作为普通表格直接上传解析。本页面可恢复 JSON / Excel 业务备份；原生数据库备份需要由数据库恢复工具执行，并在恢复前先制作当前项目快照。</p>
+    </div>
+   </section>
+
+   <section class="page" id="page-wordbooks">
+    <div class="section-heading"><div><h2>英语词书管理</h2><p>批量导入、去重、版本管理、审核与发布。</p></div><button id="refreshBooks" class="outline-button">刷新词书</button></div>
+    <div class="panel">
+     <h3>导入英语词书</h3>
+     <div class="form-grid three"><label class="field"><span>词书名称</span><input id="bookTitle" placeholder="例如：大学英语四级核心词汇"></label><label class="field"><span>词书等级</span><select id="bookLevel"><option value="CET-4">大学英语四级</option><option value="CET-6">大学英语六级</option><option value="考研">考研英语</option><option value="通用">通用</option></select></label><label class="field"><span>来源 / 授权说明</span><input id="bookSource" placeholder="请填写来源和使用授权"></label></div>
+     <div class="toolbar"><input type="file" id="wordbookFile" accept=".csv,.xlsx,.xls"><button id="previewWordbook" class="outline-button">预览词条</button><button id="importWordbook" disabled>导入为草稿</button><button id="downloadWordsTemplate" class="outline-button">下载词书模板</button></div>
+     <div id="wordbookReport" class="inline-message"></div><div id="wordbookPreview" class="table-scroll"></div>
+    </div>
+    <div class="panel"><h3>已建词书</h3><div id="wordbookTable" class="table-scroll"><div class="empty">加载中…</div></div></div>
+   </section>
+
+   <section class="page" id="page-papers">
+    <div class="section-heading"><div><h2>竞赛题库综合管理</h2><p>整套试卷管理、题目检索、编辑更正、批量核验和安全删除。</p></div><button id="refreshPapers" class="outline-button">刷新题库</button></div>
+    <div class="panel">
+     <h3>整套试卷</h3><div id="paperTable" class="table-scroll"><div class="empty">加载中…</div></div>
+    </div>
+    <div class="panel">
+     <div class="section-heading compact"><div><h3>题目检索与批量操作</h3><p>可按试卷、题干关键词和核验状态筛选。</p></div><div class="toolbar"><button id="bulkVerify" class="outline-button">批量标记已复核</button><button id="bulkDeleteQuestions" class="danger-button">批量删除题目</button></div></div>
+     <div class="toolbar"><select id="questionPaperFilter"><option value="">全部试卷</option></select><input id="questionSearch" placeholder="搜索题干 / 来源编号"><select id="questionStatusFilter"><option value="">全部状态</option><option value="ready">可用</option><option value="needs_review">待复核</option><option value="source_incomplete">资料不完整</option></select><button id="searchQuestions" class="outline-button">检索</button></div>
+     <div id="questionTable" class="table-scroll"><div class="empty">请先选择检索条件。</div></div>
+     <div class="pagination"><span id="questionCount">—</span><button id="exportQuestions" class="outline-button">导出筛选结果 Excel</button></div>
+    </div>
+   </section>
+
+   <section class="page" id="page-assemble">
+    <div class="section-heading"><div><h2>智能组卷中心</h2><p>参考专业组卷流程：筛选题库、手动/随机选题、配置分值、预览、保存和规范导出。</p></div></div>
+    <div class="panel">
+     <div class="form-grid two"><label class="field"><span>试卷名称</span><input id="assembleTitle" placeholder="请输入试卷名称"></label><label class="field"><span>组卷说明</span><input id="assembleDescription" placeholder="可填写考试范围、时长或说明"></label></div>
+     <div class="toolbar"><button id="saveAssembly">保存组卷草稿</button><button id="exportAssemblyDocx" class="outline-button">导出 Word（DOCX）</button><button id="exportAssemblyXlsx" class="outline-button">导出 Excel</button><button id="printAssembly" class="outline-button">打印 / PDF</button><button id="clearAssembly" class="danger-button">清空试题篮</button></div>
+     <div id="assembleMessage" class="inline-message"></div>
+    </div>
+    <div class="assembly-grid">
+     <div class="panel"><div class="section-heading compact"><div><h3>题库选题</h3><p>仅排除资料不完整题目，可按题型筛选。</p></div></div>
+      <div class="toolbar"><input id="assembleSearch" placeholder="搜索题目、来源试卷"><select id="assemblePaperFilter"><option value="">全部试卷</option></select><select id="assembleTypeFilter"><option value="">全部题型</option><option value="single_choice">单选</option><option value="multiple_choice">多选</option><option value="judgment">判断</option><option value="fill_blank">填空</option></select></div>
+      <div class="toolbar"><input id="randomCount" type="number" min="1" max="100" value="10"><button id="randomAssemble" class="outline-button">随机抽题</button><button id="addSelected" class="outline-button">加入已选题目</button></div>
+      <div id="assemblePool" class="question-pool"><div class="empty">加载题库中…</div></div>
+     </div>
+     <div class="panel"><div class="section-heading compact"><div><h3>当前试题篮</h3><p id="assemblySummary">0 道题 · 0 分</p></div></div><div id="assembleBasket"><div class="empty">试题篮为空</div></div>
+      <div class="section-heading compact"><div><h3>已保存组卷</h3><p>可继续编辑或再次导出</p></div><button id="refreshAssemblies" class="outline-button">刷新</button></div><div id="assemblySaved"><div class="empty">加载中…</div></div>
+     </div>
+    </div>
+   </section>
+
+   <section class="page" id="page-audit">
+    <div class="section-heading"><div><h2>操作审计</h2><p>记录账号、题库、试卷、词书等关键管理操作。</p></div><button id="refreshAudit" class="outline-button">刷新审计</button></div>
+    <div class="panel"><div id="auditTable" class="table-scroll"><div class="empty">加载中…</div></div></div>
+   </section>
+
+   <section class="page" id="page-security">
+    <div class="section-heading"><div><h2>安全与邮件中心</h2><p>统一管理账号安全配置、认证跳转和邮件模板。</p></div></div>
+    <div class="panel">
+     <h3>Google Authenticator 动态验证码</h3>
+     <p class="muted">在本账号绑定 Google Authenticator / Microsoft Authenticator / 1Password。绑定后可在登录时完成第二步验证码验证。</p>
+     <div id="mfaStatus" class="inline-message">正在读取 MFA 状态…</div>
+     <div class="toolbar"><button id="enrollTotp">绑定动态验证码</button><button id="refreshMfa" class="outline-button">刷新状态</button></div>
+     <div id="mfaEnrollment" class="hidden">
+      <p class="muted">请使用验证器扫描二维码；无法扫码时，可手动录入安全密钥。完成后输入验证器当前显示的 6 位数字。</p>
+      <img id="mfaQr" class="qr" alt="Google Authenticator 二维码">
+      <code id="mfaSecret"></code>
+      <div class="toolbar"><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 位动态验证码"><button id="verifyTotp">确认绑定</button></div>
+     </div>
+    </div>
+    <div class="panel">
+     <h3>注册和邮件验证策略</h3>
+     <div class="form-grid two"><label class="field"><span>注册策略</span><select id="registrationMode"><option value="open">开放注册（默认学生）</option><option value="roster_only">仅名单 / 邀请注册</option></select></label><label class="field"><span>平台主站地址</span><input id="siteUrlSetting" value="https://xymusicwzy.github.io/ratong/"></label></div>
+     <div class="toolbar"><button id="saveAuthSettings">保存认证策略</button></div><div id="settingsMessage" class="inline-message"></div>
+    </div>
+    <div class="panel">
+     <h3>邮件模板文件</h3>
+     <p class="muted">包含注册 OTP、邀请、密码重置、邮箱快捷登录等模板。将模板内容复制到 Supabase Auth → Email Templates 对应位置，并配置自己的 SMTP 发件服务。</p>
+     <div class="template-links"><a href="../templates/email/README.html">邮件模板安装说明</a><a href="../templates/email/signup-otp.html">注册确认 OTP</a><a href="../templates/email/invite.html">邀请注册</a><a href="../templates/email/recovery.html">密码重置</a><a href="../templates/email/magic-link.html">邮箱快捷登录</a><a href="../templates/email/change-email.html">邮箱变更</a></div>
+    </div>
+   </section>
+
+   <footer class="footer">仁爱通 · 综合管理 OA　|　关键操作均由管理员身份授权，并保留审计记录</footer>
+  </div>
+ </main>
+</div>
+
+<div id="paperDialog" class="dialog hidden"><div class="dialog-card"><div class="dialog-head"><h3>维护整套试卷</h3><button data-close="paperDialog">×</button></div><form id="paperForm">
+ <input type="hidden" id="editPaperId"><label class="field"><span>年份</span><input id="editPaperYear" type="number" min="1900" max="2100" required></label><label class="field"><span>试卷名称</span><input id="editPaperTitle" required></label><label class="field"><span>来源文件</span><input id="editPaperSource"></label><label class="field"><span>说明</span><textarea id="editPaperDescription" rows="3"></textarea></label><label class="field"><span>状态</span><select id="editPaperStatus"><option value="draft">草稿 / 已撤回</option><option value="published">已发布</option><option value="archived">已归档</option></select></label><div class="dialog-actions"><button type="button" class="outline-button" data-close="paperDialog">取消</button><button type="submit">保存试卷</button><button type="button" id="deletePaper" class="danger-button">彻底删除</button></div><div id="paperMessage" class="inline-message"></div></form></div></div>
+
+<div id="questionDialog" class="dialog hidden"><div class="dialog-card wide-dialog"><div class="dialog-head"><h3>编辑 / 更正试题</h3><button data-close="questionDialog">×</button></div><form id="questionForm">
+ <input type="hidden" id="editQuestionId"><label class="field"><span>题干</span><textarea id="editQuestionStem" rows="5" required></textarea></label><label class="field"><span>选项 JSON（如 [ {&quot;key&quot;:&quot;A&quot;,&quot;text&quot;:&quot;选项内容&quot;} ]）</span><textarea id="editQuestionOptions" rows="4"></textarea></label><div class="form-grid two"><label class="field"><span>答案 JSON / 文本</span><input id="editQuestionAnswer" placeholder='例如 ["A"] 或 ["A","C"]'></label><label class="field"><span>分值</span><input id="editQuestionScore" type="number" min="0" step="0.5"></label></div><label class="field"><span>解析</span><textarea id="editQuestionExplanation" rows="4"></textarea></label><div class="form-grid two"><label class="field"><span>答案核验状态</span><select id="editQuestionVerification"><option value="missing">缺答案</option><option value="needs_review">待复核</option><option value="source_answer">来自原始答案</option><option value="verified">已核验</option><option value="teacher_verified">教师已复核</option></select></label><label class="field"><span>题目状态</span><select id="editQuestionSourceStatus"><option value="ready">可用</option><option value="needs_review">待复核</option><option value="source_incomplete">资料不完整</option></select></label></div><label class="field"><span>来源 / 更正备注</span><textarea id="editQuestionSourceNote" rows="2"></textarea></label><div class="dialog-actions"><button type="button" class="outline-button" data-close="questionDialog">取消</button><button type="submit">保存更正</button></div><div id="questionMessage" class="inline-message"></div></form></div></div>
+
+<div id="toast" class="toast" role="status"></div>
+<script src="./oa.js"></script>
+</body></html>
