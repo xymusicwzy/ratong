@@ -161,7 +161,14 @@ async function exportBank(kind){try{const bank=await getCloudBank();if(kind==='j
 async function init(){try{if(!window.supabase?.createClient)throw new Error('Supabase JS CDN 加载失败，请检查网络');if(!DEFAULT_SUPABASE_KEY||DEFAULT_SUPABASE_KEY.startsWith('__'))throw new Error('请先填写 Supabase anon/publishable key');S.db=window.supabase.createClient(DEFAULT_SUPABASE_URL,DEFAULT_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});setConnection(true,'已加载客户端');const {data,error}=await S.db.auth.getSession();if(error)throw error;S.user=data.session?.user||null;if(S.user)await afterLogin();else{showAuth();setConnection(true,'等待登录')}S.db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){S.user=null;showAuth()}else if(session?.user&&(!S.user||S.user.id!==session.user.id)){S.user=session.user;setTimeout(()=>afterLogin(),0)}})}catch(e){showAuth();setConnection(false,'连接配置异常');showMsg($('authMsg'),getErr(e),'error');console.error(e)}}
 let mathTypesetQueued=false;
 function queueMathTypeset(){if(mathTypesetQueued||!window.MathJax||!window.MathJax.typesetPromise)return;mathTypesetQueued=true;requestAnimationFrame(()=>{mathTypesetQueued=false;window.MathJax.typesetPromise([document.body]).catch(e=>console.warn('MathJax typeset:',e));});}
-const mathObserver=new MutationObserver(mutations=>{if(mutations.some(m=>m.type==='childList'&&m.addedNodes.length))queueMathTypeset();});
+const mathObserver=new MutationObserver(mutations=>{
+ const shouldTypeset=mutations.some(m=>{
+  if(m.type!=='childList'||!m.addedNodes.length)return false;
+  if(m.target.closest?.('mjx-container,.MathJax'))return false;
+  return [...m.addedNodes].some(n=>n.nodeType===3 || (n.nodeType===1 && !n.matches('mjx-container,.MathJax') && !n.closest('mjx-container,.MathJax')));
+ });
+ if(shouldTypeset)queueMathTypeset();
+});
 window.addEventListener('DOMContentLoaded',()=>{mathObserver.observe(document.body,{childList:true,subtree:true});if(window.MathJax?.startup?.promise)window.MathJax.startup.promise.then(queueMathTypeset);init();});
 </script>
 </body></html>
