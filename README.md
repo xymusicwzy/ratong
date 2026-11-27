@@ -1,21 +1,27 @@
-# 仁爱通（Renaitong）
+# 仁爱通 · 一体化学习平台
 
-仁爱通英语学习与测评平台前端。
+本仓库是仁爱通统一入口。平台按业务板块组织为：
 
-## 发布方式
-本仓库通过 GitHub Actions 发布到 GitHub Pages。主分支 `main` 有提交时自动构建并发布；也可以在 Actions 中手动运行 **Publish Renaitong to GitHub Pages**。
+1. **平台首页**：统一入口与板块导航。
+2. **英语学习中心**：单词打卡、词书导入、口语听说、录音答卷、在线练题、学习档案、教师工作台和管理员后台。
+3. **竞赛学习中心**：天津市大学生化学竞赛理论知识个人赛，包含年度题库、刷题、模拟考试、仿真答题卡、自动批改、答题记录、教师题库维护与账号管理。
+4. **模板下载中心**：英语词书 CSV 模板、化学竞赛题库 CSV 模板。
 
-预期访问地址：<https://xymusicwzy.github.io/ratong/>
+## 目录
 
-## 当前前端模块
-- 学习总览
-- 单词打卡
-- 口语听说与录音
-- 在线练题
-- 学习档案
-- 教师工作台
-- 管理员后台
-- 模板下载中心
+- `index.html`：统一门户首页与板块导航。
+- `modules/english/index.html`：英语学习业务模块。
+- `modules/competition/index.html`：化学竞赛业务模块。
+- `.github/workflows/pages.yml`：GitHub Pages 自动发布工作流。
 
-## 重要说明
-前端沿用现有仁爱通实现。账号、词库、练习、录音、教师与管理员功能依赖原 Supabase 项目中的数据库结构及 Edge Functions。仅发布静态网页不等于后端迁移；上线后应检查 Auth、数据库表、RLS 与 Edge Functions 是否仍可访问。不要把 service_role 密钥写入前端。
+## 当前整合状态
+
+前端已整合为一个站点入口，两个业务模块在站内独立分页运行。现有模块原本连接不同的 Supabase 项目，统一身份认证、数据表迁移及竞赛模块后端合并仍需完成；在这些工作完成前，不应把它描述为已实现单点登录或已完成全部数据迁移。
+
+## 发布
+
+GitHub Pages 访问地址（须完成仓库 Pages 权限配置并且工作流成功后生效）：
+
+<https://xymusicwzy.github.io/ratong/>
+
+不要在前端写入 Supabase service_role / secret key。
