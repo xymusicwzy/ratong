@@ -18,10 +18,36 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
 .template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.template-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px}.template-card h3{margin:0 0 8px}.template-card p{font-size:13px;line-height:1.7;color:var(--muted)}.template-card button{border:0;background:var(--navy2);color:white;border-radius:9px;padding:11px 16px;cursor:pointer}.tip{margin-top:18px;padding:15px 18px;background:#edf3f5;border-radius:12px;color:#536b7b;font-size:13px;line-height:1.7}
 .footer{margin-top:35px;color:#8a98a5;font-size:11px;text-align:center}
 @media(max-width:800px){.top{height:auto;min-height:66px;padding:12px 16px;align-items:flex-start;gap:12px;flex-direction:column}.nav{width:100%;overflow:auto}.nav button{white-space:nowrap;padding:9px 12px}main{padding:18px 14px 35px}.hero{padding:28px 24px;min-height:unset}.hero h1{font-size:26px}.hero-badge{display:none}.cards{grid-template-columns:1fr}.template-grid{grid-template-columns:1fr}.module-wrap{min-height:calc(100vh - 170px)}iframe{height:calc(100vh - 240px);min-height:650px}}
+
+.auth-gate{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 15% 15%,#dce9eb,transparent 34%),linear-gradient(135deg,#edf2f5,#f8fafb)}
+.auth-card{width:min(100%,460px);background:#fff;border:1px solid var(--line);border-radius:22px;padding:34px;box-shadow:0 22px 70px #142d4218}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}.auth-mark{width:46px;height:46px;border-radius:14px;background:var(--gold);display:grid;place-items:center;color:var(--navy);font-size:23px;font-weight:900}.auth-brand strong{font-size:21px}.auth-brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:1.6px;margin-top:3px}
+.auth-card h1{font-size:24px;margin:8px 0}.auth-card p{font-size:13px;line-height:1.7;color:var(--muted)}
+.auth-tabs{display:flex;gap:7px;margin:20px 0 14px}.auth-tabs button{flex:1;border:1px solid var(--line);background:#f5f7f9;color:var(--muted);padding:10px 6px;border-radius:9px;cursor:pointer}.auth-tabs button.active{background:var(--navy2);color:#fff;border-color:var(--navy2)}
+.auth-field{display:grid;gap:6px;margin:12px 0}.auth-field label{font-size:12px;color:var(--muted);font-weight:700}.auth-field input{padding:12px;border:1px solid #d8e1e8;border-radius:10px;width:100%;font:inherit}.auth-submit{width:100%;margin-top:12px;background:var(--navy2);color:#fff;border:0;border-radius:10px;padding:13px;font-weight:700;cursor:pointer}.auth-submit:disabled{opacity:.55;cursor:wait}.auth-message{min-height:24px;font-size:12px;color:var(--muted);line-height:1.7;margin-top:12px}.auth-message.error{color:#b23c47}.auth-message.success{color:#08796c}.auth-foot{font-size:11px;color:#8a98a5;text-align:center;margin-top:18px}
+.user{display:flex;align-items:center;gap:10px}.user button{border:1px solid #ffffff45;background:#ffffff12;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
+[hidden]{display:none!important}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<header class="top">
+<section id="authGate" class="auth-gate">
+ <div class="auth-card">
+  <div class="auth-brand"><div class="auth-mark">仁</div><div><strong>仁爱通</strong><small>UNIFIED LEARNING PLATFORM</small></div></div>
+  <div class="eyebrow">ONE ACCOUNT · ONE PLATFORM</div>
+  <h1 id="authHeading">登录后开始学习</h1>
+  <p id="authIntro">一个账号通行英语学习中心与化学竞赛中心。学习记录按板块保存，身份与权限统一管理。</p>
+  <div class="auth-tabs">
+   <button type="button" class="active" data-auth-mode="login">登录</button>
+   <button type="button" data-auth-mode="signup">注册</button>
+   <button type="button" data-auth-mode="reset">找回密码</button>
+  </div>
+  <form id="authForm"></form>
+  <div id="authMessage" class="auth-message" role="status" aria-live="polite"></div>
+  <div class="auth-foot">仁爱通 · 统一账号认证与安全访问</div>
+ </div>
+</section>
+<header class="top" id="appHeader" hidden>
  <div class="brand"><div class="mark">仁</div><div><strong>仁爱通</strong><small>REN AI TONG · LEARNING PLATFORM</small></div></div>
  <nav class="nav" aria-label="主导航">
   <button class="active" data-page="home">平台首页</button>
@@ -29,9 +55,9 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
   <button data-page="competition">竞赛学习</button>
   <button data-page="templates">模板下载</button>
  </nav>
- <div class="user">统一学习入口 · 学习与竞赛分区管理</div>
+ <div class="user"><span id="signedInLabel">已登录</span><button id="signOutBtn" type="button">退出登录</button></div>
 </header>
-<main>
+<main id="appMain" hidden>
  <section class="panel active" id="home">
   <div class="hero"><div><div class="eyebrow">ONE PLATFORM · TWO LEARNING DOMAINS</div><h1>让学习与竞赛<br>在一个平台有序进行</h1><p>仁爱通统一入口，整合英语能力提升与学科竞赛训练。不同业务独立分区，学习记录、练习考试与教学管理各归其位。</p><div class="pills"><span class="pill">英语学习中心</span><span class="pill">学科竞赛中心</span><span class="pill">教师与管理员工作区</span><span class="pill">模板下载中心</span></div></div><div class="hero-badge"><strong>仁爱通</strong><span>统一平台 · 分区学习</span></div></div>
   <div class="section-head"><div><h2>学习板块</h2><p>选择板块进入对应学习空间</p></div></div>
@@ -58,27 +84,118 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
  </section>
 </main>
 <script>
+const SB_URL='https://mfmmwfdccspibvekoodb.supabase.co';
+const SB_KEY='sb_publishable_83WSC0kHUHRLhTUDgxJEoQ_L9_ur8cS';
+const ROOT_URL='https://xymusicwzy.github.io/ratong/';
+const authClient=window.supabase?.createClient(SB_URL,SB_KEY,{auth:{storageKey:'ratong-unified-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
+let currentSession=null,currentProfile=null,authMode='login';
 const pages=['home','english','competition','templates'];
+const $=id=>document.getElementById(id);
+function authNotice(message,type=''){const el=$('authMessage');el.textContent=message||'';el.className='auth-message '+type}
+function renderAuth(mode='login'){
+ authMode=mode;
+ document.querySelectorAll('[data-auth-mode]').forEach(b=>b.classList.toggle('active',b.dataset.authMode===mode));
+ $('authHeading').textContent=({login:'登录后开始学习',signup:'创建仁爱通账号',reset:'找回登录密码',recovery:'设置新密码'})[mode]||'登录仁爱通';
+ $('authIntro').textContent=mode==='signup'?'注册后即可使用同一账号进入英语学习与学科竞赛。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':'一个账号通行英语学习中心与化学竞赛中心。学习记录按板块保存，身份与权限统一管理。';
+ let html='';
+ if(mode==='recovery'){
+  html='<div class="auth-field"><label>新密码（至少8位）</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></div><div class="auth-field"><label>确认新密码</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></div><button class="auth-submit" type="submit">保存新密码</button>';
+ }else{
+  html='<div class="auth-field"><label>邮箱</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com" required></div>';
+  if(mode==='signup') html+='<div class="auth-field"><label>姓名 / 昵称</label><input id="authName" maxlength="60" autocomplete="name" placeholder="请输入显示名称"></div>';
+  if(mode!=='reset') html+='<div class="auth-field"><label>密码（至少8位）</label><input id="authPassword" type="password" minlength="8" autocomplete="'+(mode==='signup'?'new-password':'current-password')+'" required></div>';
+  if(mode==='signup') html+='<div class="auth-field"><label>确认密码</label><input id="authPassword2" type="password" minlength="8" autocomplete="new-password" required></div>';
+  html+='<button class="auth-submit" type="submit">'+({login:'登录仁爱通',signup:'注册并进入平台',reset:'发送密码重置邮件'})[mode]+'</button>';
+ }
+ $('authForm').innerHTML=html;
+ $('authForm').onsubmit=submitAuth;
+ authNotice('');
+}
+async function submitAuth(ev){
+ ev.preventDefault();
+ const btn=$('authForm').querySelector('button[type=submit]');if(btn){btn.disabled=true;btn.textContent='正在处理…'}
+ try{
+  if(!authClient) throw new Error('认证服务暂不可用，请刷新页面后重试。');
+  if(authMode==='recovery'){
+   const p=$('newPassword').value;
+   if(p.length<8||p!==$('confirmPassword').value) throw new Error('密码至少8位，且两次输入必须一致。');
+   const {error}=await authClient.auth.updateUser({password:p});if(error)throw error;
+   await authClient.auth.signOut();renderAuth('login');authNotice('密码已更新，请使用新密码登录。','success');return;
+  }
+  const email=$('authEmail').value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('请输入有效邮箱地址。');
+  if(authMode==='login'){
+   const {data,error}=await authClient.auth.signInWithPassword({email,password:$('authPassword').value});if(error)throw error;
+   currentSession=data.session;await showApp(data.session);return;
+  }
+  if(authMode==='signup'){
+   const p=$('authPassword').value;
+   if(p.length<8||p!==$('authPassword2').value) throw new Error('密码至少8位，且两次输入必须一致。');
+   const {data,error}=await authClient.auth.signUp({email,password:p,options:{data:{display_name:$('authName').value.trim()||email.split('@')[0]},emailRedirectTo:ROOT_URL}});if(error)throw error;
+   if(data.session){currentSession=data.session;await showApp(data.session)}else{renderAuth('login');authNotice('注册申请已提交。请查收邮箱并完成验证，再回来登录。','success')}
+   return;
+  }
+  if(authMode==='reset'){
+   const {error}=await authClient.auth.resetPasswordForEmail(email,{redirectTo:ROOT_URL});if(error)throw error;
+   authNotice('如果该邮箱已注册，系统已提交密码重置邮件。请检查收件箱和垃圾邮件。','success');
+  }
+ }catch(e){authNotice(e?.message||'操作失败，请稍后重试。','error')}
+ finally{if(btn){btn.disabled=false;btn.textContent=({login:'登录仁爱通',signup:'注册并进入平台',reset:'发送密码重置邮件',recovery:'保存新密码'})[authMode]||'提交'}}
+}
+function hideApp(){
+ $('authGate').hidden=false;$('appHeader').hidden=true;$('appMain').hidden=true;
+ document.getElementById('englishFrame').src='about:blank';document.getElementById('competitionFrame').src='about:blank';
+ document.getElementById('englishFrame').dataset.loaded='';document.getElementById('competitionFrame').dataset.loaded='';
+}
+async function showApp(session){
+ if(!session?.user){currentSession=null;currentProfile=null;hideApp();renderAuth('login');return}
+ currentSession=session;
+ try{
+  const {data,error}=await authClient.from('profiles').select('full_name,role,account_status').eq('id',session.user.id).maybeSingle();
+  if(error) throw error;
+  currentProfile=data||{full_name:session.user.user_metadata?.display_name||session.user.email,role:'student',account_status:'active'};
+  if(currentProfile.account_status!=='active'){await authClient.auth.signOut();throw new Error('该账号当前不可用，请联系平台管理员。')}
+ }catch(e){currentProfile={full_name:session.user.user_metadata?.display_name||session.user.email,role:'student',account_status:'active'};console.warn('profile lookup:',e)}
+ $('signedInLabel').textContent=(currentProfile.full_name||session.user.email)+' · '+({admin:'管理员',teacher:'教师',student:'学生'}[currentProfile.role]||'学习者');
+ $('authGate').hidden=true;$('appHeader').hidden=false;$('appMain').hidden=false;
+ showPage('home');
+}
 function showPage(name){
+ if(!currentSession){renderAuth('login');return}
  pages.forEach(p=>document.getElementById(p).classList.toggle('active',p===name));
  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===name));
  if(name==='english'||name==='competition'){
   const frame=document.getElementById(name+'Frame');
-  if(!frame.src || frame.src==='about:blank') frame.src=frame.dataset.src;
+  if(!frame.dataset.loaded){frame.src=frame.dataset.src;frame.dataset.loaded='1'}
  }
  window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+document.querySelectorAll('[data-auth-mode]').forEach(b=>b.addEventListener('click',()=>renderAuth(b.dataset.authMode)));
+$('signOutBtn').onclick=async()=>{if(!confirm('确定退出仁爱通？'))return;try{await authClient.auth.signOut()}finally{currentSession=null;currentProfile=null;hideApp();renderAuth('login')}};
 function downloadTemplate(kind){
  const words=['word','us_phonetic','uk_phonetic','pos','definition','explanation','example_sentence','example_translation','audio_us_url','audio_uk_url','tags'];
  const chem=['年份','试卷名称','题号','题型','题干','A','B','C','D','E','F','答案','解析','分值','来源编号','答案核验状态','答案来源','来源说明'];
  const header=kind==='words'?words:chem;
  const sample=kind==='words'?['example','/ɪɡˈzɑːmpəl/','/ɪɡˈzɑːmpəl/','n.','示例；例子','示例词条，请替换为真实内容','This is an example.','这是一个例子。','','','示例']:['2026','示例试卷','1','单选','请在此填写题干','选项A','选项B','选项C','选项D','','','A','请填写解析','2','2026-示例-001','needs_review','source','请核对原始试题来源'];
  const csv=[header,sample].map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
- const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
- const url=URL.createObjectURL(blob),a=document.createElement('a');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download=kind==='words'?'仁爱通_英语词书导入模板.csv':'仁爱通_化学竞赛题库导入模板.csv';
  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
+async function initPortal(){
+ if(!authClient){authNotice('认证组件加载失败，请刷新页面或检查网络。','error');return}
+ document.querySelectorAll('[data-auth-mode]').forEach(b=>b.addEventListener('click',()=>renderAuth(b.dataset.authMode)));
+ authClient.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){currentSession=session;renderAuth('recovery');hideApp();return}
+  if(event==='SIGNED_OUT'){currentSession=null;currentProfile=null;hideApp();renderAuth('login');return}
+  if(session?.user){setTimeout(()=>showApp(session),0)}
+ });
+ const {data,error}=await authClient.auth.getSession();
+ if(error)throw error;
+ if(location.hash.includes('type=recovery')){hideApp();renderAuth('recovery');return}
+ if(data.session)await showApp(data.session);else{hideApp();renderAuth('login')}
+}
+initPortal().catch(e=>{hideApp();authNotice(e?.message||'认证初始化失败，请刷新页面。','error')});
 </script>
 </body></html>
