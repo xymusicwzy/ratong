@@ -12,7 +12,19 @@ const toast=t=>{const e=$('toast');e.textContent=t;e.classList.add('show');clear
 const fail=(e)=>e?.message||String(e||'操作失败');
 const download=(name,blob)=>{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1800)};
 const csvBlob=rows=>new Blob(['\ufeff'+rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
-async function invokeAdmin(body){const {data,error}=await sb.functions.invoke('rt-admin-auth',{body:{...body,redirectTo:ROOT}});if(error)throw error;if(data?.error)throw new Error(data.error);return data}
+async function invokeAdmin(body){
+ const {data,error}=await sb.functions.invoke('rt-admin-auth',{body:{...body,redirectTo:ROOT}});
+ if(error){
+  let message=error.message||'管理员接口请求失败。';
+  const response=error.context;
+  if(response&&typeof response.clone==='function'){
+   try{const payload=await response.clone().json();message=payload?.error||payload?.message||message}catch(_){}
+  }
+  throw new Error(message);
+ }
+ if(data?.error)throw new Error(data.error);
+ return data;
+}
 async function countRows(table){const {count,error}=await sb.from(table).select('id',{count:'exact',head:true});if(error)throw error;return count||0}
 async function loadOaData(){
  await Promise.all([loadOverview(),loadPapers(),loadRoster(),loadWordbooks(),loadAudit(),loadAuthSettings(),loadMfa()]);
