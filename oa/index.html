@@ -61,7 +61,8 @@
     <div class="section-heading"><div><h2>账号与权限</h2><p>一个账号通行英语学习与竞赛网；新学生默认开放全部学生学习功能。</p></div><button id="refreshAccounts" class="outline-button">刷新账号</button></div>
     <div class="panel">
      <h3>邀请新用户</h3>
-     <div class="form-grid three"><label class="field"><span>邮箱地址</span><input id="inviteEmail" type="email" placeholder="student@example.com"></label><label class="field"><span>初始身份</span><select id="inviteRole"><option value="student">学生（默认）</option><option value="teacher">教师</option><option value="admin">管理员</option></select></label><div class="field end-field"><span>&nbsp;</span><button id="sendInvite">发送邀请邮件</button></div></div>
+     <div class="form-grid three"><label class="field"><span>邮箱地址</span><input id="inviteEmail" type="email" placeholder="student@example.com"></label><label class="field"><span>初始身份</span><select id="inviteRole"><option value="student">学生（默认）</option><option value="teacher">教师</option><option value="admin">管理员</option></select></label><div class="field end-field"><span>&nbsp;</span><button id="sendInvite">发送邀请 / 处理已有账号</button></div></div>
+     <p class="muted">系统会先识别邮箱：新邮箱发送邀请；已有待验证账号重发邀请验证码；已有已验证账号发送密码重置邮件，不会重复创建账号。</p>
      <div id="inviteMessage" class="inline-message"></div>
     </div>
     <div class="panel">
