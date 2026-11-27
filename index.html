@@ -29,6 +29,7 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
 [hidden]{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./assets/ratong-shell.js" defer></script>
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -69,10 +70,10 @@ main{max-width:1440px;margin:auto;padding:30px 34px 50px}.hero{background:linear
   <div class="footer">仁爱通 · 一体化学习平台</div>
  </section>
  <section class="panel" id="english">
-  <div class="module-wrap"><div class="module-head"><strong>仁爱通 · 英语学习中心</strong><span>单词打卡 / 口语听说 / 在线练题 / 学习档案 / 教师与管理员工作台</span></div><iframe id="englishFrame" title="英语学习中心" data-src="./modules/english/index.html"></iframe></div>
+  <div class="module-wrap" style="padding:32px"><h2>英语学习中心</h2><p>英语学习已作为仁爱通统一平台内的独立业务页面运行，不再嵌入另一个网页。</p><a class="primary" href="./modules/english/">进入英语学习中心</a></div>
  </section>
  <section class="panel" id="competition">
-  <div class="module-wrap"><div class="module-head"><strong>仁爱通 · 学科竞赛中心</strong><span>年度题库 / 在线考试 / 仿真答题卡 / 成绩与解析 / 题库管理</span></div><iframe id="competitionFrame" title="学科竞赛中心" data-src="./modules/competition/index.html"></iframe></div>
+  <div class="module-wrap" style="padding:32px"><h2>学科竞赛中心</h2><p>竞赛学习已作为仁爱通统一平台内的独立业务页面运行，不再嵌入另一个网页。</p><a class="primary" href="./modules/competition/">进入学科竞赛中心</a></div>
  </section>
  <section class="panel" id="templates">
   <div class="section-head"><div><h2>模板下载中心</h2><p>按板块下载统一格式模板，避免导入字段不匹配</p></div></div>
@@ -144,30 +145,25 @@ async function submitAuth(ev){
 }
 function hideApp(){
  $('authGate').hidden=false;$('appHeader').hidden=true;$('appMain').hidden=true;
- document.getElementById('englishFrame').src='about:blank';document.getElementById('competitionFrame').src='about:blank';
- document.getElementById('englishFrame').dataset.loaded='';document.getElementById('competitionFrame').dataset.loaded='';
 }
 async function showApp(session){
  if(!session?.user){currentSession=null;currentProfile=null;hideApp();renderAuth('login');return}
  currentSession=session;
- try{
-  const {data,error}=await authClient.from('profiles').select('full_name,role,account_status').eq('id',session.user.id).maybeSingle();
-  if(error) throw error;
-  currentProfile=data||{full_name:session.user.user_metadata?.display_name||session.user.email,role:'student',account_status:'active'};
-  if(currentProfile.account_status!=='active'){await authClient.auth.signOut();throw new Error('该账号当前不可用，请联系平台管理员。')}
- }catch(e){currentProfile={full_name:session.user.user_metadata?.display_name||session.user.email,role:'student',account_status:'active'};console.warn('profile lookup:',e)}
+ const {data,error}=await authClient.from('profiles').select('full_name,role,account_status').eq('id',session.user.id).maybeSingle();
+ if(error) throw error;
+ if(!data) throw new Error('账号资料尚未初始化，请联系管理员完成账号配置。');
+ currentProfile=data;
+ if(currentProfile.account_status!=='active'){await authClient.auth.signOut();throw new Error('该账号当前不可用，请联系平台管理员。')}
  $('signedInLabel').textContent=(currentProfile.full_name||session.user.email)+' · '+({admin:'管理员',teacher:'教师',student:'学生'}[currentProfile.role]||'学习者');
  $('authGate').hidden=true;$('appHeader').hidden=false;$('appMain').hidden=false;
  showPage('home');
 }
 function showPage(name){
  if(!currentSession){renderAuth('login');return}
+ if(name==='english'){location.href=ROOT_URL+'modules/english/';return}
+ if(name==='competition'){location.href=ROOT_URL+'modules/competition/';return}
  pages.forEach(p=>document.getElementById(p).classList.toggle('active',p===name));
  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===name));
- if(name==='english'||name==='competition'){
-  const frame=document.getElementById(name+'Frame');
-  if(!frame.dataset.loaded){frame.src=frame.dataset.src;frame.dataset.loaded='1'}
- }
  window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
