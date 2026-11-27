@@ -102,9 +102,9 @@ function renderAuth(mode='login'){
  $('authIntro').textContent=mode==='signup'?'注册后默认开放全部学生学习功能；教师和管理员权限由 OA 单独授权。':mode==='reset'?'输入注册邮箱，我们会向您发送安全的密码重置链接。':mode==='recovery'?'请设置新的登录密码，完成后即可返回平台。':mode==='emailotp'?'输入注册邮箱，系统将发送一次性验证码。':mode==='inviteotp'?'请填写管理员邀请时使用的邮箱，并输入邀请邮件中的 邮箱验证码。':mode==='confirmotp'?'请填写注册邮箱并输入注册确认邮件中的 邮箱验证码。':mode.startsWith('verify_')?'请输入邮件中收到的 邮箱验证码。':'一个账号通行英语学习中心与竞赛网。学习记录按板块保存，身份与权限统一管理。';
  let html='';
  if(mode==='confirmotp'||mode==='inviteotp'){
-  html='<div class="auth-field"><label>邮箱地址</label><input id="authEmail" type="email" autocomplete="email" placeholder="请输入接收邮件的邮箱" required></div><div class="auth-field"><label>邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的 6 位数字" required></div><button class="auth-submit" type="submit">'+(mode==='inviteotp'?'验证邀请并设置密码':'验证邮箱并登录')+'</button>';
+  html='<div class="auth-field"><label>邮箱地址</label><input id="authEmail" type="email" autocomplete="email" placeholder="请输入接收邮件的邮箱" required></div><div class="auth-field"><label>邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的验证码" required></div><button class="auth-submit" type="submit">'+(mode==='inviteotp'?'验证邀请并设置密码':'验证邮箱并登录')+'</button>';
  }else if(mode==='verify_signup'||mode==='verify_login'){
-  html='<div class="auth-field"><label>验证邮箱</label><input id="authEmail" type="email" value="'+String(pendingOtpEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></div><div class="auth-field"><label>邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的 6 位数字" required></div><button class="auth-submit" type="submit">验证并继续</button><button id="authResendOtp" type="button" class="auth-submit" style="margin-top:8px;background:#eef0f8;color:#2f3b66">重新发送验证码</button>';
+  html='<div class="auth-field"><label>验证邮箱</label><input id="authEmail" type="email" value="'+String(pendingOtpEmail).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" readonly></div><div class="auth-field"><label>邮箱验证码</label><input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件中的验证码" required></div><button class="auth-submit" type="submit">验证并继续</button><button id="authResendOtp" type="button" class="auth-submit" style="margin-top:8px;background:#eef0f8;color:#2f3b66">重新发送验证码</button>';
  }else if(mode==='recovery'){
   html='<div class="auth-field"><label>新密码（至少8位）</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></div><div class="auth-field"><label>确认新密码</label><input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></div><button class="auth-submit" type="submit">保存新密码</button>';
  }else{
@@ -149,7 +149,7 @@ async function submitAuth(ev){
    return;
   }
   if(authMode==='verify_signup'||authMode==='verify_login'){
-   const code=$('authOtp').value.trim();if(!/^\d{6}$/.test(code))throw new Error('请输入 6–8 位数字验证码。');
+   const code=$('authOtp').value.trim();if(!/^\d{6,8}$/.test(code))throw new Error('请输入 6–8 位数字验证码。');
    const {data,error}=await authClient.auth.verifyOtp({email:pendingOtpEmail,token:code,type:'email'});if(error)throw error;
    currentSession=data.session;await showApp(data.session);return;
   }
@@ -166,7 +166,7 @@ async function submitAuth(ev){
   }
   if(authMode==='emailotp'){
    const {error}=await authClient.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;
-   pendingOtpEmail=email;renderAuth('verify_login');authNotice('邮箱验证码已提交发送。请查收邮件并输入 6 位代码。','success');return;
+   pendingOtpEmail=email;renderAuth('verify_login');authNotice('邮箱验证码已提交发送。请查收邮件并输入验证码。','success');return;
   }
   if(authMode==='signup'){
    const p=$('authPassword').value;if(p.length<8||p!==$('authPassword2').value)throw new Error('密码至少8位，且两次输入必须一致。');
@@ -176,7 +176,7 @@ async function submitAuth(ev){
     authNotice('该邮箱已对应仁爱通账号，不需要重复注册。请直接登录，或选择“邮箱验证码”登录；忘记密码可使用“找回密码”。','warning');
     return;
    }
-   if(data.session){currentSession=data.session;await showApp(data.session)}else{pendingOtpEmail=email;renderAuth('verify_signup');authNotice('注册验证码已发送。请查收邮件并输入 6 位数字完成验证。','success')}
+   if(data.session){currentSession=data.session;await showApp(data.session)}else{pendingOtpEmail=email;renderAuth('verify_signup');authNotice('注册验证码已发送。请查收邮件并输入验证码完成验证。','success')}
    return;
   }
   if(authMode==='reset'){
